@@ -5,16 +5,17 @@
   import Processos from './Processos.svelte';
   import MapMundi from './MapMundi.svelte';
   import MapMundi3D from './MapMundi3D.svelte';
+  import MapMundi3DGlobe from './MapMundi3DGlobe.svelte';
 
   export let userId: string;
 
   const MAP_STORAGE = 'gitdeadline_map_mode';
-  let mapMode: '2d' | '3d' = '3d';
+  let mapMode: '2d' | '3d' | 'globo' = 'globo';
   try {
     const stored = localStorage.getItem(MAP_STORAGE);
-    if (stored === '2d' || stored === '3d') mapMode = stored;
+    if (stored === '2d' || stored === '3d' || stored === 'globo') mapMode = stored;
   } catch (_) {}
-  function setMapMode(m: '2d' | '3d') {
+  function setMapMode(m: '2d' | '3d' | 'globo') {
     mapMode = m;
     try {
       localStorage.setItem(MAP_STORAGE, m);
@@ -173,22 +174,30 @@
         <div class="flex rounded-lg border border-phosphor/30 overflow-hidden">
           <button
             on:click={() => setMapMode('2d')}
-            class="px-3 py-1.5 text-xs font-mono transition-all {mapMode === '2d' ? 'bg-phosphor/20 text-phosphor border-r border-phosphor/30' : 'text-phosphor/60 hover:text-phosphor hover:bg-phosphor/5'}"
+            class="px-3 py-1.5 text-xs font-mono transition-all {mapMode === '2d' ? 'bg-phosphor/20 text-phosphor' : 'text-phosphor/60 hover:text-phosphor hover:bg-phosphor/5'} border-r border-phosphor/20"
           >
             2D
           </button>
           <button
             on:click={() => setMapMode('3d')}
-            class="px-3 py-1.5 text-xs font-mono transition-all {mapMode === '3d' ? 'bg-phosphor/20 text-phosphor border-l border-phosphor/30' : 'text-phosphor/60 hover:text-phosphor hover:bg-phosphor/5'}"
+            class="px-3 py-1.5 text-xs font-mono transition-all {mapMode === '3d' ? 'bg-phosphor/20 text-phosphor' : 'text-phosphor/60 hover:text-phosphor hover:bg-phosphor/5'} border-r border-phosphor/20"
           >
             3D
+          </button>
+          <button
+            on:click={() => setMapMode('globo')}
+            class="px-3 py-1.5 text-xs font-mono transition-all {mapMode === 'globo' ? 'bg-phosphor/20 text-phosphor' : 'text-phosphor/60 hover:text-phosphor hover:bg-phosphor/5'}"
+          >
+            Globo
           </button>
         </div>
       </div>
       {#if mapMode === '2d'}
         <MapMundi {userId} />
-      {:else}
+      {:else if mapMode === '3d'}
         <MapMundi3D {userId} />
+      {:else}
+        <MapMundi3DGlobe {userId} />
       {/if}
     </div>
 

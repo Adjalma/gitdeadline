@@ -14,16 +14,12 @@
   const usePolling = import.meta.env.PROD;
 
   function formatTime(secs: number) {
-    if (secs <= 0) return { days: 0, hrs: 0, min: 0, sec: 0, compact: '' };
+    if (secs <= 0) return { days: 0, hrs: 0, min: 0, sec: 0 };
     const d = Math.floor(secs / 86400);
     const h = Math.floor((secs % 86400) / 3600);
     const m = Math.floor((secs % 3600) / 60);
     const s = Math.floor(secs % 60);
-    let compact = '';
-    if (secs >= 86400 * 1e6) compact = (secs / 3600 / 1e9).toFixed(1) + 'B h';
-    else if (secs >= 86400 * 1e3) compact = (secs / 3600 / 1e6).toFixed(1) + 'M h';
-    else if (secs >= 86400 * 100) compact = (secs / 3600 / 1e3).toFixed(1) + 'k h';
-    return { days: d, hrs: h, min: m, sec: s, compact };
+    return { days: d, hrs: h, min: m, sec: s };
   }
 
   function getClockColor(secs: number): string {
@@ -130,7 +126,7 @@
         }
       });
       if (usePolling) {
-        pollInterval = setInterval(pollTime, 2000); // Sync a cada 2s — tempo real 24x7
+        pollInterval = setInterval(pollTime, 1000); // Sync a cada 1s — tempo real 24x7
         const onVisibility = () => {
           if (document.visibilityState === 'visible') pollTime();
         };
@@ -176,8 +172,6 @@
     >
       {#if timeSecs == null}
         <span class="text-phosphor/70">{initError ? 'Erro ao carregar' : 'Carregando histórico GitHub...'}</span>
-      {:else if formatTime(timeSecs).compact}
-        <span>{formatTime(timeSecs).compact}</span>
       {:else}
         <span>{formatTime(timeSecs).days.toString().padStart(3, '0')}</span>
         <span class="opacity-50">:</span>
@@ -190,11 +184,7 @@
     </div>
     {#if timeSecs != null}
       <div class="mt-2 text-phosphor/50 text-xs font-mono">
-        {#if formatTime(timeSecs).compact}
-          {formatTime(timeSecs).days} dias · {formatTime(timeSecs).hrs}h {formatTime(timeSecs).min}m {formatTime(timeSecs).sec}s
-        {:else}
-          DAYS &nbsp;&nbsp; HRS &nbsp; MIN &nbsp; SEC
-        {/if}
+        DAYS &nbsp;&nbsp; HRS &nbsp; MIN &nbsp; SEC
       </div>
     {/if}
   </div>
