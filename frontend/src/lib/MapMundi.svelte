@@ -39,8 +39,8 @@
 
   async function fetchMap() {
     try {
-      const url = `/api/ranking?map=1&limit=200${userId ? `&ping=${encodeURIComponent(userId)}` : ''}`;
-      const res = await fetch(url, { credentials: 'include' });
+      const url = `/api/ranking?map=1&limit=200${userId ? `&ping=${encodeURIComponent(userId)}` : ''}&_=${Date.now()}`;
+      const res = await fetch(url, { credentials: 'include', cache: 'no-store' });
       const text = await res.text();
       try {
         const data = text ? JSON.parse(text) : {};
@@ -72,8 +72,17 @@
     } catch (_) {}
   }
 
-  onMount(() => {
-    fetchMap();
+  onMount(async () => {
+    await fetchMap();
+    if (users.length === 0 && userId) {
+      try {
+        const r = await fetch(`/api/user/${userId}/init?sync=1`, { method: 'POST', credentials: 'include' });
+        if (r.ok) {
+          await new Promise((x) => setTimeout(x, 800));
+          await fetchMap();
+        }
+      } catch (_) {}
+    }
     unsubMap = triggerMapRefresh.subscribe((v) => {
       if (v > 0) fetchMap();
     });

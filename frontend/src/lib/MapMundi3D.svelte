@@ -50,8 +50,8 @@
 
   async function fetchMap(includeDebug = false) {
     try {
-      const url = `/api/ranking?map=1&limit=200${userId ? `&ping=${encodeURIComponent(userId)}` : ''}${includeDebug ? '&debug=1' : ''}`;
-      const res = await fetch(url, { credentials: 'include' });
+      const url = `/api/ranking?map=1&limit=200${userId ? `&ping=${encodeURIComponent(userId)}` : ''}${includeDebug ? '&debug=1' : ''}&_=${Date.now()}`;
+      const res = await fetch(url, { credentials: 'include', cache: 'no-store' });
       const data = await res.json().catch(() => ({}));
       users = data.users ?? [];
       onlineCount = data.online_count || 0;
@@ -255,9 +255,19 @@
     unsubMap = triggerMapRefresh.subscribe((v) => {
       if (v > 0) fetchMap().then(() => updateScene());
     });
-    fetchMap().then(() => {
+    fetchMap().then(async () => {
       initThree();
       animate();
+      if (users.length === 0 && userId) {
+        try {
+          const r = await fetch(`/api/user/${userId}/init?sync=1`, { method: 'POST', credentials: 'include' });
+          if (r.ok) {
+            await new Promise((x) => setTimeout(x, 800));
+            await fetchMap(true);
+            if (scene) updateScene();
+          }
+        } catch (_) {}
+      }
       window.addEventListener('resize', onResize);
       iv = setInterval(() => {
         fetchMap().then(() => updateScene());
