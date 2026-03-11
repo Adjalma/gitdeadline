@@ -4,16 +4,25 @@
 
   let userId = 'anonymous';
   let authError = '';
+  let loading = true;
 
-  onMount(() => {
+  onMount(async () => {
     const params = new URLSearchParams(window.location.search);
     const userFromUrl = params.get('user');
+    const err = params.get('error');
+    if (err) authError = err === 'no_github_config' ? 'GitHub OAuth não configurado.' : 'Erro ao conectar com GitHub.';
+
     if (userFromUrl) {
       userId = userFromUrl.toLowerCase();
       window.history.replaceState({}, '', '/');
+    } else {
+      try {
+        const res = await fetch('/api/auth/me', { credentials: 'include' });
+        const data = await res.json();
+        if (data.user) userId = data.user;
+      } catch (_) {}
     }
-    const err = params.get('error');
-    if (err) authError = err === 'no_github_config' ? 'GitHub OAuth não configurado.' : 'Erro ao conectar com GitHub.';
+    loading = false;
   });
 </script>
 
@@ -27,7 +36,11 @@
     </div>
   </header>
 
-  {#if userId === 'anonymous'}
+  {#if loading}
+    <section class="flex-1 flex items-center justify-center">
+      <span class="text-phosphor/60 animate-pulse">Carregando...</span>
+    </section>
+  {:else if userId === 'anonymous'}
     <section class="flex-1 flex flex-col items-center justify-center px-6 py-16">
       <div class="max-w-md w-full space-y-6">
         <p class="text-phosphor/90 text-center text-sm leading-relaxed">

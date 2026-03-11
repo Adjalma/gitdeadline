@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
+	"strings"
 	"time"
 
 	gorillaws "github.com/gorilla/websocket"
@@ -37,6 +39,7 @@ func main() {
 	mux := http.NewServeMux()
 
 	// API REST
+	mux.HandleFunc("GET /api/auth/me", handleAuthMe())
 	mux.HandleFunc("GET /api/time/{user}", handleGetTime(te))
 	mux.HandleFunc("GET /api/ranking", handleGetRanking(te))
 	mux.HandleFunc("POST /api/user/{user}/init", handleInitUser(rs))
@@ -68,6 +71,22 @@ func runDecrementWorker(ctx context.Context, rs *store.RedisStore, hub *websocke
 		case <-ticker.C:
 			rs.DecrementAll(ctx, hub)
 		}
+	}
+}
+
+func handleAuthMe() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Credentials", "true")
+		cookie, err := r.Cookie("gh_user")
+		if err != nil || cookie.Value == "" {
+			json.NewEncoder(w).Encode(map[string]interface{}{"user": nil})
+			return
+		}
+		u, _ := url.QueryUnescape(cookie.Value)
+		if u == "" {
+			u = cookie.Value
+		}
+		json.NewEncoder(w).Encode(map[string]interface{}{"user": strings.ToLower(u)})
 	}
 }
 

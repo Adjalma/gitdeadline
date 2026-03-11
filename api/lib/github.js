@@ -3,13 +3,15 @@
  * Usado por sync e init (novos usuários)
  */
 const BONUS = { pr: 72 * 3600, issue: 48 * 3600, commit: 3600, review: 6 * 3600 };
-const COMMIT_CAP_PER_DAY = 24;
+const COMMIT_CAP_PER_YEAR = 365 * 24;
 
 export async function fetchContributions(username, token) {
-  if (!token) return 0;
+  if (!token || typeof username !== 'string' || !username) return { totalSeconds: 0, error: null };
   const now = new Date();
   let totalSeconds = 0;
+  let lastError = null;
   const years = 15;
+
   for (let y = 0; y < years; y++) {
     const to = new Date(now.getFullYear() - y, 11, 31, 23, 59, 59);
     const from = new Date(now.getFullYear() - y, 0, 1, 0, 0, 0);
@@ -43,17 +45,25 @@ export async function fetchContributions(username, token) {
         }),
       });
       const data = await res.json();
-      if (data.errors) break;
+
+      if (data.errors) {
+        lastError = data.errors[0]?.message || 'GraphQL error';
+        continue;
+      }
       const c = data?.data?.user?.contributionsCollection;
-      if (!c) break;
-      const commits = Math.min(c.totalCommitContributions || 0, COMMIT_CAP_PER_DAY * 365);
+      if (!c) {
+        if (data?.data?.user === null) lastError = 'User not found';
+        continue;
+      }
+      const commits = Math.min(c.totalCommitContributions || 0, COMMIT_CAP_PER_YEAR);
       totalSeconds += (c.totalPullRequestContributions || 0) * BONUS.pr;
       totalSeconds += (c.totalIssueContributions || 0) * BONUS.issue;
       totalSeconds += (c.totalPullRequestReviewContributions || 0) * BONUS.review;
       totalSeconds += commits * BONUS.commit;
-    } catch (_) {
-      break;
+    } catch (e) {
+      lastError = e.message || 'Network error';
+      continue;
     }
   }
-  return totalSeconds;
+  return { totalSeconds, error: totalSeconds === 0 ? lastError : null };
 }

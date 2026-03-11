@@ -32,10 +32,24 @@ export default async function handler(req, res) {
   }
 
   const token = getTokenFromCookie(req.headers.cookie) || process.env.GITHUB_TOKEN;
-  const computed = token ? await fetchContributions(user, token) : 0;
-  if (computed === 0 && !token) {
+  if (!token) {
     return res.status(401).json({ error: 'Token não encontrado. Faça login novamente.', time: null });
   }
-  const result = await syncFromHistory(user, Math.max(computed, 3600));
-  return res.json({ time: result.ok ? result.time : 3600 });
+
+  const { totalSeconds: computed, error: fetchError } = await fetchContributions(user, token);
+  const timeToUse = Math.max(computed, 3600);
+
+  if (computed === 0) {
+    return res.status(400).json({
+      error: fetchError || 'Histórico vazio. Verifique o username ou faça login novamente.',
+      time: null,
+      debug: fetchError,
+    });
+  }
+
+  const result = await syncFromHistory(user, timeToUse);
+  return res.json({
+    time: result.ok ? result.time : 3600,
+    computedHours: Math.floor(computed / 3600),
+  });
 }
