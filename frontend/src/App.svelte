@@ -1,9 +1,22 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import LifeClock from './lib/LifeClock.svelte';
   import Ranking from './lib/Ranking.svelte';
 
   let userName = 'dev';
   let userId = 'anonymous';
+  let authError = '';
+
+  onMount(() => {
+    const params = new URLSearchParams(window.location.search);
+    const userFromUrl = params.get('user');
+    if (userFromUrl) {
+      userId = userFromUrl;
+      window.history.replaceState({}, '', '/');
+    }
+    const err = params.get('error');
+    if (err) authError = err === 'no_github_config' ? 'GitHub OAuth não configurado.' : 'Erro ao conectar. Use o username manualmente.';
+  });
 
   function handleStart() {
     userId = userName.trim() || 'anonymous';
@@ -24,9 +37,19 @@
     <section class="flex-1 flex flex-col items-center justify-center px-6 py-16">
       <div class="max-w-md w-full space-y-6">
         <p class="text-phosphor/90 text-center text-sm leading-relaxed">
-          Digite seu username do GitHub para entrar na Cidadela Vertical.
+          Entre com seu GitHub para jogar na Cidadela Vertical.
           O relógio começa em 24h. Commits, PRs e Issues concedem tempo.
         </p>
+        {#if authError}
+          <p class="text-neonred text-sm text-center">{authError}</p>
+        {/if}
+        <a
+          href="/api/auth/github"
+          class="block w-full text-center px-6 py-3 border border-phosphor text-phosphor hover:bg-phosphor hover:text-black font-bold transition-colors"
+        >
+          ENTRAR COM GITHUB
+        </a>
+        <p class="text-phosphor/50 text-xs text-center">ou digite seu username:</p>
         <div class="flex gap-2">
           <input
             type="text"
@@ -37,7 +60,7 @@
           />
           <button
             on:click={handleStart}
-            class="px-6 py-3 border border-phosphor text-phosphor hover:bg-phosphor hover:text-black font-bold transition-colors"
+            class="px-6 py-3 border border-phosphor/50 text-phosphor/80 hover:bg-phosphor/10 font-bold transition-colors"
           >
             ENTRAR
           </button>

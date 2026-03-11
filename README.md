@@ -8,7 +8,7 @@ O tempo é a moeda. O ranking é a longevidade digital.
 
 - **Backend:** Go (engine de tempo, webhooks GitHub, WebSockets)
 - **Banco:** Redis (ranking em tempo real)
-- **Frontend:** Svelte 5 + Tailwind CSS (dark mode, tipografia mono)
+- **Frontend:** Svelte 4 + Tailwind CSS (dark mode, tipografia mono)
 
 ## Mecânicas
 

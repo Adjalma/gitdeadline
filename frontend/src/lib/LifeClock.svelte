@@ -49,8 +49,12 @@
       .then((r) => r.json())
       .then((d) => {
         if (d.time != null) {
-          timeSecs = d.time;
-          zone = getZoneFromTime(timeSecs);
+          // Só atualiza se recebeu bônus (servidor tem bem mais tempo) ou zerou no servidor
+          // Evita que poll sem Redis (sempre 86400) resetar o countdown local
+          if (d.time > timeSecs + 60 || d.time <= 0) {
+            timeSecs = Math.max(0, d.time);
+            zone = getZoneFromTime(timeSecs);
+          }
         }
       })
       .catch(() => {});
@@ -82,7 +86,7 @@
     if (userId && userId !== 'anonymous') {
       await initUser();
       if (usePolling) {
-        pollInterval = setInterval(pollTime, 2000);
+        pollInterval = setInterval(pollTime, 10000); // Sync a cada 10s (bônus, etc)
       } else {
         connectWS();
       }
