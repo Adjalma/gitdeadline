@@ -3,7 +3,6 @@
   import LifeClock from './lib/LifeClock.svelte';
   import Ranking from './lib/Ranking.svelte';
 
-  let userName = 'dev';
   let userId = 'anonymous';
   let authError = '';
 
@@ -15,12 +14,9 @@
       window.history.replaceState({}, '', '/');
     }
     const err = params.get('error');
-    if (err) authError = err === 'no_github_config' ? 'GitHub OAuth não configurado.' : 'Erro ao conectar. Use o username manualmente.';
+    if (err) authError = err === 'no_github_config' ? 'GitHub OAuth não configurado.' : 'Erro ao conectar com GitHub.';
   });
 
-  function handleStart() {
-    userId = userName.trim() || 'anonymous';
-  }
 </script>
 
 <main class="min-h-screen bg-black flex flex-col">
@@ -49,22 +45,6 @@
         >
           ENTRAR COM GITHUB
         </a>
-        <p class="text-phosphor/50 text-xs text-center">ou digite seu username:</p>
-        <div class="flex gap-2">
-          <input
-            type="text"
-            bind:value={userName}
-            placeholder="username"
-            class="flex-1 bg-black border border-phosphor/50 px-4 py-3 text-phosphor placeholder-phosphor/40 focus:outline-none focus:border-phosphor font-mono"
-            on:keydown={(e) => e.key === 'Enter' && handleStart()}
-          />
-          <button
-            on:click={handleStart}
-            class="px-6 py-3 border border-phosphor/50 text-phosphor/80 hover:bg-phosphor/10 font-bold transition-colors"
-          >
-            ENTRAR
-          </button>
-        </div>
       </div>
     </section>
   {:else}
