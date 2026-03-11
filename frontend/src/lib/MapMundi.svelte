@@ -230,9 +230,13 @@
       {#if users.length === 0}
         <div class="mt-4 p-5 rounded-lg border-2 border-amber/50 bg-amber/5">
           <p class="text-amber font-mono font-bold">Mapa vazio</p>
-          <p class="text-phosphor/70 text-xs mt-2">
-            Clique em <strong>Re-sincronizar</strong> para gravar seu tempo no ranking.
-          </p>
+          {#if syncError}
+            <p class="text-neonred text-xs mt-2">{syncError}</p>
+          {:else}
+            <p class="text-phosphor/70 text-xs mt-2">
+              Clique em <strong>Re-sincronizar</strong> para gravar seu tempo no ranking.
+            </p>
+          {/if}
           <button
             on:click={syncAndRefresh}
             class="mt-3 px-4 py-2 border-2 border-phosphor text-phosphor hover:bg-phosphor hover:text-black text-xs font-mono font-bold transition-all"
