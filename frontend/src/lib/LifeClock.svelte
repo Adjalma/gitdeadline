@@ -4,7 +4,7 @@
 
   export let userId: string;
 
-  let timeSecs = 86400;
+  let timeSecs: number | null = null;
   let ws: WebSocket | null = null;
   let connected = false;
   let zone: 'dev_null' | 'home_user' | 'root' = 'home_user';
@@ -47,6 +47,8 @@
       timeSecs = data.time;
       zone = getZoneFromTime(timeSecs);
       gameZone.set(zone);
+    } else {
+      timeSecs = 0;
     }
   }
 
@@ -54,9 +56,7 @@
     fetch(`/api/time/${userId}`)
       .then((r) => r.json())
       .then((d) => {
-        if (d.time != null) {
-          // Só atualiza se recebeu bônus (servidor tem bem mais tempo) ou zerou no servidor
-          // Evita que poll sem Redis (sempre 86400) resetar o countdown local
+        if (d.time != null && timeSecs != null) {
           if (d.time > timeSecs + 60 || d.time <= 0) {
             timeSecs = Math.max(0, d.time);
             zone = getZoneFromTime(timeSecs);
@@ -99,7 +99,7 @@
         connectWS();
       }
       countdownInterval = setInterval(() => {
-        if (timeSecs <= 0 || (connected && !usePolling)) return;
+        if (timeSecs == null || timeSecs <= 0 || (connected && !usePolling)) return;
         timeSecs--;
         if (timeSecs < 0) timeSecs = 0;
         zone = getZoneFromTime(timeSecs);
@@ -124,9 +124,11 @@
       </span>
     </div>
     <div
-      class="flex gap-2 font-mono text-4xl md:text-5xl font-bold tabular-nums {getClockColor(timeSecs)}"
+      class="flex gap-2 font-mono text-4xl md:text-5xl font-bold tabular-nums {timeSecs != null ? getClockColor(timeSecs) : 'text-phosphor/50'}"
     >
-      {#if formatTime(timeSecs).compact}
+      {#if timeSecs == null}
+        <span class="text-phosphor/70">Carregando histórico GitHub...</span>
+      {:else if formatTime(timeSecs).compact}
         <span>{formatTime(timeSecs).compact}</span>
       {:else}
         <span>{formatTime(timeSecs).days.toString().padStart(3, '0')}</span>
@@ -138,12 +140,14 @@
         <span>{formatTime(timeSecs).sec.toString().padStart(2, '0')}</span>
       {/if}
     </div>
-    <div class="mt-2 text-phosphor/50 text-xs font-mono">
-      DAYS &nbsp;&nbsp; HRS &nbsp; MIN &nbsp; SEC
-    </div>
+    {#if timeSecs != null}
+      <div class="mt-2 text-phosphor/50 text-xs font-mono">
+        DAYS &nbsp;&nbsp; HRS &nbsp; MIN &nbsp; SEC
+      </div>
+    {/if}
   </div>
 
-  {#if timeSecs <= 0}
+  {#if timeSecs != null && timeSecs <= 0}
     <div class="border-2 border-neonred p-8 text-neonred text-center rounded">
       <p class="text-3xl font-bold tracking-wider">MORTE DIGITAL</p>
       <p class="text-sm mt-3 opacity-90">O Arquivo dos Ecos — seu perfil foi petrificado.</p>
@@ -155,7 +159,7 @@
         CONTRIBUIR NO GITHUB
       </a>
     </div>
-  {:else}
+  {:else if timeSecs != null}
     <div class="text-phosphor/60 text-xs">
       Zona atual: <span class="text-phosphor font-bold">
         {zone === 'dev_null' ? '/dev/null' : zone === 'home_user' ? '/home/user' : '/root'}

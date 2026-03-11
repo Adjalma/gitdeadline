@@ -21,7 +21,7 @@ export function isRedisConfigured() {
 }
 
 export async function getTime(userId) {
-  if (!redis) return { time: DEFAULT_HOURS * 3600 };
+  if (!redis) return { time: null };
   const expiresAt = await redis.get(KEY_EXPIRES + userId);
   if (!expiresAt) return { time: null };
   const now = Math.floor(Date.now() / 1000);
@@ -71,15 +71,12 @@ export async function addBonus(userId, event) {
     await redis.set(KEY_LAST_COMMIT + userId, Math.floor(Date.now() / 1000), { ex: 86400 });
   }
   const key = KEY_EXPIRES + userId;
-  let expiresAt = await redis.get(key);
+  const expiresAt = await redis.get(key);
+  if (!expiresAt) return { bonus: 0 };
   const now = Math.floor(Date.now() / 1000);
-  if (!expiresAt) {
-    expiresAt = now + DEFAULT_HOURS * 3600;
-  } else {
-    expiresAt = Math.max(now, Number(expiresAt)) + bonus;
-  }
-  await redis.set(key, expiresAt);
-  await redis.zadd(KEY_RANKING, { score: expiresAt, member: userId });
+  const newExpires = Math.max(now, Number(expiresAt)) + bonus;
+  await redis.set(key, newExpires);
+  await redis.zadd(KEY_RANKING, { score: newExpires, member: userId });
   return { bonus };
 }
 

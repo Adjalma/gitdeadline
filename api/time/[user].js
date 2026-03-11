@@ -10,5 +10,5 @@ export default async function handler(req, res) {
 
   recordPresence(user).catch(() => {});
   const { time } = await getTime(user);
-  return res.json({ time: time ?? 86400 });
+  return res.json({ time });
 }
