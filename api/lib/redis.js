@@ -10,6 +10,8 @@ const redis = process.env.UPSTASH_REDIS_REST_URL
 const KEY_EXPIRES = 'gitdeadline:expires:';
 const KEY_RANKING = 'gitdeadline:ranking';
 const KEY_ONLINE = 'gitdeadline:online';
+const KEY_GH_TOKEN = 'gitdeadline:gh_token:';
+const TOKEN_TTL = 2592000;
 const ONLINE_TTL = 120; // 2 min
 const KEY_LAST_COMMIT = 'gitdeadline:last_commit:';
 const DEFAULT_HOURS = 24;
@@ -18,6 +20,16 @@ const BONUS = { pr_merged: 72 * 3600, issue_resolved: 48 * 3600, commit: 3600 };
 
 export function isRedisConfigured() {
   return !!redis;
+}
+
+export async function setGitHubToken(userId, token) {
+  if (!redis || !token) return;
+  await redis.set(KEY_GH_TOKEN + userId.toLowerCase(), token, { ex: TOKEN_TTL });
+}
+
+export async function getGitHubToken(userId) {
+  if (!redis || !userId) return null;
+  return redis.get(KEY_GH_TOKEN + userId.toLowerCase());
 }
 
 export async function getTime(userId) {

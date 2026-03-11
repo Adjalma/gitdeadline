@@ -3,7 +3,7 @@
  * Usado por sync e init (novos usuários)
  */
 const BONUS = { pr: 72 * 3600, issue: 48 * 3600, commit: 3600, review: 6 * 3600 };
-const COMMIT_CAP_PER_YEAR = 365 * 24;
+const COMMIT_CAP_PER_YEAR = 100000;
 
 export async function fetchContributions(username, token) {
   if (!token || typeof username !== 'string' || !username) return { totalSeconds: 0, error: null };
@@ -25,6 +25,9 @@ export async function fetchContributions(username, token) {
               totalPullRequestContributions
               totalIssueContributions
               totalPullRequestReviewContributions
+              contributionCalendar {
+                totalContributions
+              }
             }
           }
         }
@@ -34,6 +37,7 @@ export async function fetchContributions(username, token) {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
+          Accept: 'application/json',
         },
         body: JSON.stringify({
           query,
@@ -56,10 +60,12 @@ export async function fetchContributions(username, token) {
         continue;
       }
       const commits = Math.min(c.totalCommitContributions || 0, COMMIT_CAP_PER_YEAR);
-      totalSeconds += (c.totalPullRequestContributions || 0) * BONUS.pr;
-      totalSeconds += (c.totalIssueContributions || 0) * BONUS.issue;
-      totalSeconds += (c.totalPullRequestReviewContributions || 0) * BONUS.review;
-      totalSeconds += commits * BONUS.commit;
+      const pr = (c.totalPullRequestContributions || 0) * BONUS.pr;
+      const issue = (c.totalIssueContributions || 0) * BONUS.issue;
+      const review = (c.totalPullRequestReviewContributions || 0) * BONUS.review;
+      const commitSecs = commits * BONUS.commit;
+      const yearTotal = pr + issue + review + commitSecs;
+      totalSeconds += yearTotal > 0 ? yearTotal : (c.contributionCalendar?.totalContributions || 0) * 3600;
     } catch (e) {
       lastError = e.message || 'Network error';
       continue;

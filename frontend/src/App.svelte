@@ -2,6 +2,8 @@
   import { onMount } from 'svelte';
   import GameView from './lib/GameView.svelte';
 
+  const STORAGE_KEY = 'gitdeadline_user';
+
   let userId = 'anonymous';
   let authError = '';
   let loading = true;
@@ -10,17 +12,32 @@
     const params = new URLSearchParams(window.location.search);
     const userFromUrl = params.get('user');
     const err = params.get('error');
+    const logout = params.get('logout');
+    if (logout) {
+      try { localStorage.removeItem(STORAGE_KEY); } catch (_) {}
+      window.history.replaceState({}, '', '/');
+    }
     if (err) authError = err === 'no_github_config' ? 'GitHub OAuth não configurado.' : 'Erro ao conectar com GitHub.';
 
     if (userFromUrl) {
       userId = userFromUrl.toLowerCase();
+      try { localStorage.setItem(STORAGE_KEY, userId); } catch (_) {}
       window.history.replaceState({}, '', '/');
     } else {
       try {
         const res = await fetch('/api/auth/me', { credentials: 'include' });
         const data = await res.json();
-        if (data.user) userId = data.user;
-      } catch (_) {}
+        if (data.user) {
+          userId = data.user;
+          try { localStorage.setItem(STORAGE_KEY, userId); } catch (_) {}
+        } else {
+          const stored = localStorage.getItem(STORAGE_KEY);
+          if (stored) userId = stored.toLowerCase();
+        }
+      } catch (_) {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) userId = stored.toLowerCase();
+      }
     }
     loading = false;
   });
@@ -56,6 +73,12 @@
           class="block w-full text-center px-6 py-3 border border-phosphor text-phosphor hover:bg-phosphor hover:text-black font-bold transition-colors"
         >
           ENTRAR COM GITHUB
+        </a>
+        <a
+          href="/api/auth/logout"
+          class="block w-full text-center text-phosphor/50 hover:text-phosphor text-xs underline"
+        >
+          Limpar sessão e fazer logout
         </a>
       </div>
     </section>

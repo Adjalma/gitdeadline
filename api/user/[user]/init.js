@@ -3,7 +3,7 @@
  * Já existente → retorna tempo atual. ?sync=1 força re-sync. Jogo 24x7.
  * Usa token OAuth do usuário (cookie) para buscar histórico.
  */
-import { getTime, syncFromHistory, recordPresence } from '../../lib/redis.js';
+import { getTime, syncFromHistory, recordPresence, getGitHubToken } from '../../lib/redis.js';
 import { fetchContributions } from '../../lib/github.js';
 
 function getTokenFromCookie(cookieHeader) {
@@ -31,7 +31,16 @@ export default async function handler(req, res) {
     }
   }
 
-  const token = getTokenFromCookie(req.headers.cookie) || process.env.GITHUB_TOKEN;
+  let token = getTokenFromCookie(req.headers.cookie);
+  let tokenSource = 'cookie';
+  if (!token) {
+    token = await getGitHubToken(user);
+    tokenSource = 'redis';
+  }
+  if (!token) {
+    token = process.env.GITHUB_TOKEN;
+    tokenSource = 'env';
+  }
   if (!token) {
     return res.status(401).json({ error: 'Token não encontrado. Faça login novamente.', time: null });
   }
@@ -48,8 +57,12 @@ export default async function handler(req, res) {
   }
 
   const result = await syncFromHistory(user, timeToUse);
-  return res.json({
+  const payload = {
     time: result.ok ? result.time : 3600,
     computedHours: Math.floor(computed / 3600),
-  });
+  };
+  if (req.query.debug === '1') {
+    payload.debug = { computed, tokenSource, redisOk: result.ok };
+  }
+  return res.json(payload);
 }

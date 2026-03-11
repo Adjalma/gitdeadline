@@ -46,7 +46,12 @@
       <h1 class="text-lg font-mono tracking-[0.3em] text-phosphor/90">
         GITdeadline<span class="text-black bg-phosphor px-1">_</span>
       </h1>
-      <span class="text-amber/70 text-xs font-mono">CÓDIGO = TEMPO</span>
+      <div class="flex items-center gap-4">
+        <span class="text-amber/70 text-xs font-mono">CÓDIGO = TEMPO</span>
+        <a href="/api/auth/logout" class="text-phosphor/50 hover:text-phosphor text-xs">
+          Sair
+        </a>
+      </div>
     </header>
 
     <!-- MAPA: CIDADELA VERTICAL — Edifício em Camadas (conceito) -->

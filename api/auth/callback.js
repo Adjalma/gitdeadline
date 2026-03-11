@@ -1,3 +1,5 @@
+import { setGitHubToken } from '../lib/redis.js';
+
 export default async function handler(req, res) {
   const { code } = req.query;
   const clientId = process.env.GITHUB_CLIENT_ID;
@@ -22,8 +24,11 @@ export default async function handler(req, res) {
     });
     const user = await userRes.json();
     const username = (user.login || 'anonymous').toLowerCase();
-    const secure = isSecure ? '; Secure' : '';
     const token = String(tokenData.access_token || '');
+
+    setGitHubToken(username, token).catch(() => {});
+
+    const secure = isSecure ? '; Secure' : '';
     res.setHeader('Set-Cookie', [
       `gh_token=${token}; Path=/; HttpOnly; SameSite=Lax; Max-Age=2592000${secure}`,
       `gh_user=${encodeURIComponent(username)}; Path=/; SameSite=Lax; Max-Age=2592000${secure}`,

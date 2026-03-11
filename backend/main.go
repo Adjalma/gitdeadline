@@ -40,6 +40,7 @@ func main() {
 
 	// API REST
 	mux.HandleFunc("GET /api/auth/me", handleAuthMe())
+	mux.HandleFunc("GET /api/auth/logout", handleLogout())
 	mux.HandleFunc("GET /api/time/{user}", handleGetTime(te))
 	mux.HandleFunc("GET /api/ranking", handleGetRanking(te))
 	mux.HandleFunc("POST /api/user/{user}/init", handleInitUser(rs))
@@ -71,6 +72,14 @@ func runDecrementWorker(ctx context.Context, rs *store.RedisStore, hub *websocke
 		case <-ticker.C:
 			rs.DecrementAll(ctx, hub)
 		}
+	}
+}
+
+func handleLogout() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		http.SetCookie(w, &http.Cookie{Name: "gh_token", Value: "", Path: "/", MaxAge: -1})
+		http.SetCookie(w, &http.Cookie{Name: "gh_user", Value: "", Path: "/", MaxAge: -1})
+		http.Redirect(w, r, "/?logout=1", 302)
 	}
 }
 
