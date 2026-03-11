@@ -53,7 +53,7 @@ export async function recordPresence(userId) {
 export async function getOnlineUsers() {
   if (!redis) return new Set();
   const now = Math.floor(Date.now() / 1000);
-  const members = await redis.zrangebyscore(KEY_ONLINE, now - ONLINE_TTL, '+inf');
+  const members = await redis.zrange(KEY_ONLINE, now - ONLINE_TTL, '+inf', { byScore: true });
   return new Set((Array.isArray(members) ? members : []).map((m) => String(m).toLowerCase()));
 }
 
