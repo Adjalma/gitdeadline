@@ -91,7 +91,10 @@ Configure em **Settings → Webhooks** do repositório:
 ## Deploy no Vercel
 
 1. Conecte o repositório ao [Vercel](https://vercel.com)
-2. Configure o [Upstash Redis](https://console.upstash.com): crie um banco e adicione as variáveis:
+2. **Upstash Redis** – crie um banco em [console.upstash.com](https://console.upstash.com) e adicione:
    - `UPSTASH_REDIS_REST_URL`
    - `UPSTASH_REDIS_REST_TOKEN`
-3. Deploy
+3. **GitHub OAuth** – crie um OAuth App em [github.com/settings/developers](https://github.com/settings/developers):
+   - Callback URL: `https://seu-dominio.vercel.app/api/auth/callback`
+   - Adicione `GITHUB_CLIENT_ID` e `GITHUB_CLIENT_SECRET`
+4. Deploy

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
+  import { gameZone } from './stores.js';
 
   export let userId: string;
 
@@ -41,6 +42,7 @@
     if (data.time != null) {
       timeSecs = data.time;
       zone = getZoneFromTime(timeSecs);
+      gameZone.set(zone);
     }
   }
 
@@ -54,6 +56,7 @@
           if (d.time > timeSecs + 60 || d.time <= 0) {
             timeSecs = Math.max(0, d.time);
             zone = getZoneFromTime(timeSecs);
+            gameZone.set(zone);
           }
         }
       })
@@ -77,6 +80,7 @@
         if (msg.type === 'time_update' && typeof msg.time === 'number') {
           timeSecs = msg.time;
           zone = getZoneFromTime(timeSecs);
+          gameZone.set(zone);
         }
       } catch (_) {}
     };
@@ -94,6 +98,8 @@
         if (timeSecs <= 0 || (connected && !usePolling)) return;
         timeSecs--;
         if (timeSecs < 0) timeSecs = 0;
+        zone = getZoneFromTime(timeSecs);
+        gameZone.set(zone);
       }, 1000);
     }
   });
@@ -130,9 +136,16 @@
   </div>
 
   {#if timeSecs <= 0}
-    <div class="border border-neonred p-6 text-neonred text-center">
-      <p class="text-xl font-bold">MORTE DIGITAL</p>
-      <p class="text-sm mt-2 opacity-80">Seu tempo acabou. Contribua no GitHub para a ressurreição.</p>
+    <div class="border-2 border-neonred p-8 text-neonred text-center rounded">
+      <p class="text-3xl font-bold tracking-wider">MORTE DIGITAL</p>
+      <p class="text-sm mt-3 opacity-90">O Arquivo dos Ecos — seu perfil foi petrificado.</p>
+      <p class="text-xs mt-4 text-phosphor/70">Ressurreição: PR aceito em projeto +100 estrelas = +30 dias.</p>
+      <a
+        href="/api/auth/github"
+        class="inline-block mt-6 px-6 py-3 border border-phosphor text-phosphor hover:bg-phosphor hover:text-black font-bold"
+      >
+        CONTRIBUIR NO GITHUB
+      </a>
     </div>
   {:else}
     <div class="text-phosphor/60 text-xs">

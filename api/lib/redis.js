@@ -67,6 +67,25 @@ export async function addBonus(userId, event) {
   return { bonus };
 }
 
+export async function transferTime(fromUserId, toUserId, seconds) {
+  if (!redis) return { ok: false };
+  const fromKey = KEY_EXPIRES + fromUserId;
+  const toKey = KEY_EXPIRES + toUserId;
+  const fromExp = await redis.get(fromKey);
+  const toExp = await redis.get(toKey);
+  if (!fromExp) return { ok: false, error: 'sem tempo' };
+  const now = Math.floor(Date.now() / 1000);
+  const fromTime = Math.max(0, Number(fromExp) - now);
+  if (fromTime < seconds) return { ok: false, error: 'tempo insuficiente' };
+  const newFromExp = Number(fromExp) - seconds;
+  const newToExp = toExp ? Number(toExp) + seconds : now + seconds;
+  await redis.set(fromKey, newFromExp);
+  await redis.set(toKey, newToExp);
+  await redis.zadd(KEY_RANKING, { score: newFromExp, member: fromUserId });
+  await redis.zadd(KEY_RANKING, { score: newToExp, member: toUserId });
+  return { ok: true, transferred: seconds };
+}
+
 export async function getRanking(limit = 50) {
   if (!redis) return { ranking: [] };
   const results = await redis.zrange(KEY_RANKING, 0, limit - 1, { rev: true, withScores: true });

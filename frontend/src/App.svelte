@@ -1,7 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import LifeClock from './lib/LifeClock.svelte';
-  import Ranking from './lib/Ranking.svelte';
+  import GameView from './lib/GameView.svelte';
 
   let userId = 'anonymous';
   let authError = '';
@@ -16,7 +15,6 @@
     const err = params.get('error');
     if (err) authError = err === 'no_github_config' ? 'GitHub OAuth não configurado.' : 'Erro ao conectar com GitHub.';
   });
-
 </script>
 
 <main class="min-h-screen bg-black flex flex-col">
@@ -48,28 +46,7 @@
       </div>
     </section>
   {:else}
-    <section class="flex-1 p-6 max-w-4xl mx-auto w-full">
-      <LifeClock {userId} />
-      <div class="mt-4 flex gap-2">
-        <button
-          on:click={async () => {
-            await fetch(`/api/user/${userId}/bonus?event=commit`, { method: 'POST' });
-          }}
-          class="px-4 py-2 border border-amber/50 text-amber/90 hover:bg-amber/10 text-sm"
-        >
-          +1h (commit)
-        </button>
-        <button
-          on:click={async () => {
-            await fetch(`/api/user/${userId}/bonus?event=pr_merged`, { method: 'POST' });
-          }}
-          class="px-4 py-2 border border-phosphor/50 text-phosphor hover:bg-phosphor/10 text-sm"
-        >
-          +72h (PR)
-        </button>
-      </div>
-      <Ranking {userId} />
-    </section>
+    <GameView {userId} />
   {/if}
 
   <footer class="border-t border-phosphor/20 px-6 py-3 text-center text-phosphor/50 text-xs">
