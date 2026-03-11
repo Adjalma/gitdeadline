@@ -55,6 +55,7 @@
       const data = await res.json().catch(() => ({}));
       users = data.users ?? [];
       onlineCount = data.online_count || 0;
+      syncError = data?.error || '';
       if (includeDebug && data.debug) debugInfo = data.debug;
     } catch (_) {
       users = [];

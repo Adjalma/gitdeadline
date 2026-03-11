@@ -47,6 +47,7 @@
         const data = text ? JSON.parse(text) : {};
         users = data.users ?? [];
         onlineCount = data.online_count || 0;
+        syncError = data?.error || '';
       } catch (_) {
         users = [];
       }
