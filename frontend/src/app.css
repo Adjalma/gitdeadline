@@ -1,0 +1,14 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --phosphor: #39ff14;
+  --amber: #ffbf00;
+  --neonred: #ff073a;
+}
+
+body {
+  background-color: #000;
+  color: var(--phosphor);
+}

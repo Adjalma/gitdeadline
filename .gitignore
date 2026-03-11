@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+frontend/node_modules/
+
+# Build outputs
+frontend/build/
+backend/gitdeadline
+backend/gitdeadline.exe
+dist/
+.output/
+.vercel/
+
+# Environment
+.env
+.env.local
+.env*.local
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Go
+backend/*.exe
