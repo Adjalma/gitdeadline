@@ -19,7 +19,7 @@ export default async function handler(req, res) {
   const query = req.query || {};
   try {
     if (query.map === '1' || query.map === 'true') {
-      const limit = Math.min(parseInt(query.limit, 10) || 500, 5000);
+      const limit = Math.min(parseInt(query.limit, 10) || 2000, 100000);
       const ping = (query.ping || '').toLowerCase();
       if (ping) {
         try {

@@ -3,24 +3,9 @@
   import { gameZone, triggerTimeRefresh } from './stores.js';
   import LifeClock from './LifeClock.svelte';
   import Processos from './Processos.svelte';
-  import MapMundi from './MapMundi.svelte';
-  import MapMundi3D from './MapMundi3D.svelte';
   import MapMundi3DGlobe from './MapMundi3DGlobe.svelte';
 
   export let userId: string;
-
-  const MAP_STORAGE = 'gitdeadline_map_mode';
-  let mapMode: '2d' | '3d' | 'globo' = 'globo';
-  try {
-    const stored = localStorage.getItem(MAP_STORAGE);
-    if (stored === '2d' || stored === '3d' || stored === 'globo') mapMode = stored;
-  } catch (_) {}
-  function setMapMode(m: '2d' | '3d' | 'globo') {
-    mapMode = m;
-    try {
-      localStorage.setItem(MAP_STORAGE, m);
-    } catch (_) {}
-  }
 
   async function addBonus(event: string) {
     const res = await fetch(`/api/user/${userId}/bonus?event=${event}`, { method: 'POST', credentials: 'include' });
@@ -165,41 +150,8 @@
       </div>
     </section>
 
-    <!-- MAPA MUNDI — Git Deadline 24x7 -->
-    <div class="space-y-3">
-      <div class="flex items-center justify-between">
-        <span class="text-phosphor/60 text-xs font-mono uppercase tracking-wider">
-          Visualização do mapa
-        </span>
-        <div class="flex rounded-lg border border-phosphor/30 overflow-hidden">
-          <button
-            on:click={() => setMapMode('2d')}
-            class="px-3 py-1.5 text-xs font-mono transition-all {mapMode === '2d' ? 'bg-phosphor/20 text-phosphor' : 'text-phosphor/60 hover:text-phosphor hover:bg-phosphor/5'} border-r border-phosphor/20"
-          >
-            2D
-          </button>
-          <button
-            on:click={() => setMapMode('3d')}
-            class="px-3 py-1.5 text-xs font-mono transition-all {mapMode === '3d' ? 'bg-phosphor/20 text-phosphor' : 'text-phosphor/60 hover:text-phosphor hover:bg-phosphor/5'} border-r border-phosphor/20"
-          >
-            3D
-          </button>
-          <button
-            on:click={() => setMapMode('globo')}
-            class="px-3 py-1.5 text-xs font-mono transition-all {mapMode === 'globo' ? 'bg-phosphor/20 text-phosphor' : 'text-phosphor/60 hover:text-phosphor hover:bg-phosphor/5'}"
-          >
-            Globo
-          </button>
-        </div>
-      </div>
-      {#if mapMode === '2d'}
-        <MapMundi {userId} />
-      {:else if mapMode === '3d'}
-        <MapMundi3D {userId} />
-      {:else}
-        <MapMundi3DGlobe {userId} />
-      {/if}
-    </div>
+    <!-- GLOBO 3D — Git Deadline (escala: milhares a 100k+) -->
+    <MapMundi3DGlobe {userId} />
 
     <!-- PLAYER AVATARS — Processos + Spectator -->
     <section class="grid grid-cols-1 md:grid-cols-2 gap-6">

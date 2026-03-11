@@ -1,7 +1,7 @@
 <script lang="ts">
   /**
-   * Mapa Mundi 3D — Globo terrestre real
-   * Jogadores como pontos na superfície. Escala para milhares (Points + clustering visual).
+   * Globo 3D — GIT DEADLINE
+   * Escala para 100k+ usuários via clustering. Cada cluster = agregação de jogadores.
    */
   import { onMount } from 'svelte';
   import * as THREE from 'three';
@@ -18,6 +18,13 @@
     zone: Zone;
     online: boolean;
   }
+  interface Cluster {
+    lat: number;
+    lng: number;
+    count: number;
+    zone: Zone;
+    hasOnline: boolean;
+  }
 
   let users: MapUser[] = [];
   let onlineCount = 0;
@@ -31,7 +38,8 @@
   let controls: OrbitControls;
   let frameId: number;
   let pointsMesh: THREE.Points | null = null;
-  const MAX_VISIBLE = 2000;
+  const MAX_FETCH = 100000;
+  const MAX_CLUSTERS = 2500;
 
   const COLORS = { root: 0xffbf00, home_user: 0x39ff14, dev_null: 0xff073a };
 
@@ -39,9 +47,9 @@
     const i = rank - 1;
     const phi = Math.acos(-1 + (2 * i) / Math.max(1, total));
     const theta = Math.sqrt(total * Math.PI) * phi;
-    const lat = (90 - (phi * 180) / Math.PI);
+    const lat = 90 - (phi * 180) / Math.PI;
     const lng = (theta * 180) / Math.PI;
-    return [lat, lng % 360];
+    return [lat, ((lng % 360) + 360) % 360];
   }
 
   function latLngToVector3(lat: number, lng: number, radius: number): THREE.Vector3 {
@@ -54,6 +62,47 @@
     );
   }
 
+  /** Agrupa usuários em clusters para escala (até 100k). Tamanho do cluster = f(count). */
+  function clusterUsers(userList: MapUser[]): Cluster[] {
+    if (userList.length === 0) return [];
+    const n = userList.length;
+    const targetCells = Math.min(MAX_CLUSTERS, Math.max(100, Math.ceil(Math.sqrt(n) * 1.2)));
+    const gridSize = Math.ceil(Math.sqrt(targetCells));
+    const cellLat = 180 / gridSize;
+    const cellLng = 360 / gridSize;
+    const buckets = new Map<
+      string,
+      { lats: number[]; lngs: number[]; zones: Record<Zone, number>; online: number }
+    >();
+    for (const u of userList) {
+      const [lat, lng] = latLngFromRank(u.rank, n);
+      const ky = Math.min(gridSize - 1, Math.floor((lat + 90) / cellLat));
+      const kx = Math.floor(((lng + 360) % 360) / cellLng) % Math.ceil(360 / cellLng);
+      const key = `${ky}_${kx}`;
+      if (!buckets.has(key))
+        buckets.set(key, { lats: [], lngs: [], zones: { dev_null: 0, home_user: 0, root: 0 }, online: 0 });
+      const b = buckets.get(key)!;
+      b.lats.push(lat);
+      b.lngs.push(lng);
+      b.zones[u.zone]++;
+      if (u.online) b.online++;
+    }
+    const clusters: Cluster[] = [];
+    for (const [, v] of buckets) {
+      if (v.lats.length === 0) continue;
+      const entries = Object.entries(v.zones) as [Zone, number][];
+      const dominant = entries.sort((a, b) => b[1] - a[1])[0][0];
+      clusters.push({
+        lat: v.lats.reduce((a, x) => a + x, 0) / v.lats.length,
+        lng: v.lngs.reduce((a, x) => a + x, 0) / v.lngs.length,
+        count: v.lats.length,
+        zone: dominant,
+        hasOnline: v.online > 0,
+      });
+    }
+    return clusters;
+  }
+
   function formatHours(h: number): string {
     if (h >= 1e9) return (h / 1e9).toFixed(1) + 'B';
     if (h >= 1e6) return (h / 1e6).toFixed(1) + 'M';
@@ -64,7 +113,7 @@
   async function fetchMap(includeDebug = false) {
     try {
       const cacheBust = `&_=${Date.now()}`;
-      const url = `/api/ranking?map=1&limit=${MAX_VISIBLE}${userId ? `&ping=${encodeURIComponent(userId)}` : ''}${includeDebug ? '&debug=1' : ''}${cacheBust}`;
+      const url = `/api/ranking?map=1&limit=${MAX_FETCH}${userId ? `&ping=${encodeURIComponent(userId)}` : ''}${includeDebug ? '&debug=1' : ''}${cacheBust}`;
       const res = await fetch(url, { credentials: 'include', cache: 'no-store' });
       const data = await res.json().catch(() => ({}));
       users = data.users ?? [];
@@ -105,30 +154,57 @@
       (pointsMesh.material as THREE.Material).dispose();
     }
     pointsMesh = null;
-    if (users.length === 0) return;
-    const n = Math.min(users.length, MAX_VISIBLE);
+    const clusters = clusterUsers(users);
+    if (clusters.length === 0) return;
+    const n = clusters.length;
     const positions = new Float32Array(n * 3);
     const colors = new Float32Array(n * 3);
-    users.slice(0, n).forEach((u, i) => {
-      const [lat, lng] = latLngFromRank(u.rank, users.length);
-      const v = latLngToVector3(lat, lng, 2.2);
+    const sizes = new Float32Array(n);
+    const totalUsers = users.length;
+    const maxCount = Math.max(1, ...clusters.map((c) => c.count));
+    clusters.forEach((cl, i) => {
+      const v = latLngToVector3(cl.lat, cl.lng, 2.2);
       positions[i * 3] = v.x;
       positions[i * 3 + 1] = v.y;
       positions[i * 3 + 2] = v.z;
-      const c = new THREE.Color(COLORS[u.zone]);
-      colors[i * 3] = c.r;
-      colors[i * 3 + 1] = c.g;
-      colors[i * 3 + 2] = c.b;
+      const col = new THREE.Color(COLORS[cl.zone]);
+      colors[i * 3] = col.r;
+      colors[i * 3 + 1] = col.g;
+      colors[i * 3 + 2] = col.b;
+      const sizeBase = 0.05 + 0.25 * Math.log10(1 + cl.count) / Math.log10(1 + maxCount);
+      sizes[i] = cl.hasOnline ? sizeBase * 1.3 : sizeBase;
     });
     const geom = new THREE.BufferGeometry();
     geom.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     geom.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-    const mat = new THREE.PointsMaterial({
-      size: 0.08,
-      vertexColors: true,
-      sizeAttenuation: true,
+    geom.setAttribute('pointSize', new THREE.BufferAttribute(sizes, 1));
+    const baseSize = totalUsers > 50000 ? 0.06 : totalUsers > 10000 ? 0.08 : 0.1;
+    const mat = new THREE.ShaderMaterial({
       transparent: true,
-      opacity: 0.9,
+      depthWrite: true,
+      uniforms: {
+        size: { value: baseSize },
+        scale: { value: 1 },
+      },
+      vertexShader: `
+        attribute float pointSize;
+        attribute vec3 color;
+        varying vec3 vColor;
+        void main() {
+          vColor = color;
+          vec4 mvPos = modelViewMatrix * vec4(position, 1.0);
+          gl_PointSize = pointSize * size * (scale / -mvPos.z);
+          gl_Position = projectionMatrix * mvPos;
+        }
+      `,
+      fragmentShader: `
+        varying vec3 vColor;
+        void main() {
+          float d = length(gl_PointCoord - 0.5) * 2.0;
+          float a = 1.0 - smoothstep(0.5, 0.8, d);
+          gl_FragColor = vec4(vColor, a * 0.92);
+        }
+      `,
     });
     pointsMesh = new THREE.Points(geom, mat);
     scene.add(pointsMesh);
@@ -247,7 +323,7 @@
       GLOBO 3D — <span class="text-amber">GIT DEADLINE</span>
     </span>
     <span class="text-phosphor/70 text-xs font-mono tabular-nums">
-      <span class="text-phosphor">{onlineCount}</span> online · <span class="text-phosphor">{users.length}</span> jogadores
+      <span class="text-phosphor">{onlineCount}</span> online · <span class="text-phosphor">{users.length.toLocaleString()}</span> jogadores
     </span>
   </div>
   <div class="relative min-h-[360px]">
@@ -277,7 +353,7 @@
       </div>
     {/if}
     <div class="absolute bottom-2 left-2 right-2 flex justify-between items-center text-phosphor/50 text-[10px] font-mono">
-      <span>Arraste · Scroll zoom · Gira sozinho</span>
+      <span>Arraste · Scroll zoom · Pontos maiores = mais jogadores no cluster</span>
       <span class="flex gap-3">
         <span><span class="text-amber">●</span> /root</span>
         <span><span class="text-phosphor">●</span> /home/user</span>
