@@ -43,7 +43,7 @@
 
   async function fetchMap() {
     try {
-      const res = await fetch('/api/map?limit=200');
+      const res = await fetch('/api/ranking?map=1&limit=200');
       const data = await res.json();
       users = data.users || [];
       onlineCount = data.online_count || 0;
