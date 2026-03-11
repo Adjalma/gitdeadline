@@ -57,7 +57,7 @@
     <!-- MAPA: CIDADELA VERTICAL — Edifício em Camadas (conceito) -->
     <section class="rounded-lg overflow-hidden border border-phosphor/30 bg-black/80 backdrop-blur-sm">
       <div class="px-4 py-2 border-b border-phosphor/20 bg-black/60 font-mono text-xs uppercase tracking-widest text-phosphor/70">
-        CIDADELA VERTICAL — THE GIT CITY
+        CIDADELA VERTICAL — GIT DEADLINE
       </div>
       <div class="p-6 flex flex-col gap-0">
         <!-- /root — topo dourado -->

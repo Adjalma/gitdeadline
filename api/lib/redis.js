@@ -153,6 +153,16 @@ function parseZRangeWithScores(raw) {
   return out;
 }
 
+export async function getRankingCount() {
+  if (!redis) return 0;
+  try {
+    const n = await redis.zcard(KEY_RANKING);
+    return typeof n === 'number' ? n : 0;
+  } catch {
+    return -1;
+  }
+}
+
 export async function getAllUsersForMap(limit = 500) {
   if (!redis) return { users: [], online: [] };
   const [rawResults, onlineSet] = await Promise.all([

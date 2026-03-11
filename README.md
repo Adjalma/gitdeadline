@@ -91,9 +91,10 @@ Configure em **Settings → Webhooks** do repositório:
 ## Deploy no Vercel
 
 1. Conecte o repositório ao [Vercel](https://vercel.com)
-2. **Upstash Redis** – crie um banco em [console.upstash.com](https://console.upstash.com) e adicione:
-   - `UPSTASH_REDIS_REST_URL`
-   - `UPSTASH_REDIS_REST_TOKEN`
+2. **Upstash Redis** – crie um banco em [console.upstash.com](https://console.upstash.com):
+   - Aba **REST** → copie `UPSTASH_REDIS_REST_URL` e `UPSTASH_REDIS_REST_TOKEN`
+   - **Use o token DEFAULT (read-write)**, não o Read-Only. O app precisa gravar dados (ranking, presença, tempo).
+   - Se o mapa mundi mostrar 0 jogadores, confira `?map=1&debug=1` na URL do ranking.
 3. **GitHub OAuth** – crie um OAuth App em [github.com/settings/developers](https://github.com/settings/developers):
    - Callback URL: `https://seu-dominio.vercel.app/api/auth/callback`
    - Adicione `GITHUB_CLIENT_ID` e `GITHUB_CLIENT_SECRET`
