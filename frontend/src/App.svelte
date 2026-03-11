@@ -2,8 +2,8 @@
   import LifeClock from './lib/LifeClock.svelte';
   import Ranking from './lib/Ranking.svelte';
 
-  let userName = $state('dev');
-  let userId = $state('anonymous');
+  let userName = 'dev';
+  let userId = 'anonymous';
 
   function handleStart() {
     userId = userName.trim() || 'anonymous';
@@ -33,10 +33,10 @@
             bind:value={userName}
             placeholder="username"
             class="flex-1 bg-black border border-phosphor/50 px-4 py-3 text-phosphor placeholder-phosphor/40 focus:outline-none focus:border-phosphor font-mono"
-            onkeydown={(e) => e.key === 'Enter' && handleStart()}
+            on:keydown={(e) => e.key === 'Enter' && handleStart()}
           />
           <button
-            onclick={handleStart}
+            on:click={handleStart}
             class="px-6 py-3 border border-phosphor text-phosphor hover:bg-phosphor hover:text-black font-bold transition-colors"
           >
             ENTRAR
@@ -47,10 +47,9 @@
   {:else}
     <section class="flex-1 p-6 max-w-4xl mx-auto w-full">
       <LifeClock {userId} />
-      <!-- Botão de teste (dev): simula bônus de commit -->
       <div class="mt-4 flex gap-2">
         <button
-          onclick={async () => {
+          on:click={async () => {
             await fetch(`/api/user/${userId}/bonus?event=commit`, { method: 'POST' });
           }}
           class="px-4 py-2 border border-amber/50 text-amber/90 hover:bg-amber/10 text-sm"
@@ -58,7 +57,7 @@
           +1h (commit)
         </button>
         <button
-          onclick={async () => {
+          on:click={async () => {
             await fetch(`/api/user/${userId}/bonus?event=pr_merged`, { method: 'POST' });
           }}
           class="px-4 py-2 border border-phosphor/50 text-phosphor hover:bg-phosphor/10 text-sm"

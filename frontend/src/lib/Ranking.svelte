@@ -1,31 +1,23 @@
 <script lang="ts">
-  interface Props {
-    userId: string;
-  }
-  let { userId }: Props = $props();
+  import { onMount, onDestroy } from 'svelte';
+
+  export let userId: string;
 
   interface RankEntry {
     user_id: string;
     score: number;
     rank: number;
   }
-  let ranking = $state<RankEntry[]>([]);
-
-  const API_BASE = '';
+  let ranking: RankEntry[] = [];
+  let rankingInterval: ReturnType<typeof setInterval> | null = null;
 
   async function fetchRanking() {
     try {
-      const res = await fetch(`${API_BASE}/api/ranking`);
+      const res = await fetch('/api/ranking');
       const data = await res.json();
       if (data.ranking) ranking = data.ranking;
     } catch (_) {}
   }
-
-  $effect(() => {
-    fetchRanking();
-    const iv = setInterval(fetchRanking, 10000);
-    return () => clearInterval(iv);
-  });
 
   function formatScore(secs: number): string {
     const d = Math.floor(secs / 86400);
@@ -34,6 +26,15 @@
     if (h > 0) return `${h}h`;
     return `${Math.floor(secs % 3600 / 60)}m`;
   }
+
+  onMount(() => {
+    fetchRanking();
+    rankingInterval = setInterval(fetchRanking, 10000);
+  });
+
+  onDestroy(() => {
+    if (rankingInterval) clearInterval(rankingInterval);
+  });
 </script>
 
 <div class="mt-10 border border-phosphor/30 p-6">

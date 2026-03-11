@@ -4,6 +4,9 @@ import { defineConfig } from 'vite';
 export default defineConfig({
   plugins: [svelte()],
   base: '/',
+  resolve: {
+    dedupe: ['svelte'],
+  },
   build: {
     outDir: 'build',
     emptyOutDir: true,

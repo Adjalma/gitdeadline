@@ -1,15 +1,16 @@
 <script lang="ts">
-  interface Props {
-    userId: string;
-  }
-  let { userId }: Props = $props();
+  import { onMount, onDestroy } from 'svelte';
 
-  let timeSecs = $state(86400); // 24h
-  let ws = $state<WebSocket | null>(null);
-  let connected = $state(false);
-  let zone = $state<'dev_null' | 'home_user' | 'root'>('home_user');
+  export let userId: string;
 
-  const API_BASE = '';
+  let timeSecs = 86400;
+  let ws: WebSocket | null = null;
+  let connected = false;
+  let zone: 'dev_null' | 'home_user' | 'root' = 'home_user';
+  let pollInterval: ReturnType<typeof setInterval> | null = null;
+  let countdownInterval: ReturnType<typeof setInterval> | null = null;
+
+  const usePolling = import.meta.env.PROD;
 
   function formatTime(secs: number) {
     if (secs <= 0) return { days: 0, hrs: 0, min: 0, sec: 0 };
@@ -22,45 +23,25 @@
 
   function getClockColor(secs: number): string {
     const hrs = secs / 3600;
-    if (hrs > 72) return 'text-phosphor'; // verde
-    if (hrs > 24) return 'text-amber'; // amarelo
-    return 'text-neonred'; // vermelho crítico
+    if (hrs > 72) return 'text-phosphor';
+    if (hrs > 24) return 'text-amber';
+    return 'text-neonred';
   }
 
   function getZoneFromTime(secs: number) {
     const hrs = secs / 3600;
     if (hrs < 24) return 'dev_null';
-    if (hrs < 720) return 'home_user'; // 30 dias
+    if (hrs < 720) return 'home_user';
     return 'root';
   }
 
   async function initUser() {
-    const res = await fetch(`${API_BASE}/api/user/${userId}/init`, { method: 'POST' });
+    const res = await fetch(`/api/user/${userId}/init`, { method: 'POST' });
     const data = await res.json();
-    if (data.time != null) timeSecs = data.time;
-    zone = getZoneFromTime(timeSecs);
-  }
-
-  // Em produção (Vercel) não há WebSocket; usamos polling
-  const usePolling = import.meta.env.PROD;
-
-  function connectWS() {
-    if (usePolling) return;
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const host = import.meta.env.DEV ? `${window.location.hostname}:8080` : window.location.host;
-    const url = `${protocol}//${host}/api/ws?user=${encodeURIComponent(userId)}`;
-    ws = new WebSocket(url);
-    ws.onopen = () => { connected = true; };
-    ws.onclose = () => { connected = false; setTimeout(connectWS, 2000); };
-    ws.onmessage = (e) => {
-      try {
-        const msg = JSON.parse(e.data);
-        if (msg.type === 'time_update' && typeof msg.time === 'number') {
-          timeSecs = msg.time;
-          zone = getZoneFromTime(timeSecs);
-        }
-      } catch (_) {}
-    };
+    if (data.time != null) {
+      timeSecs = data.time;
+      zone = getZoneFromTime(timeSecs);
+    }
   }
 
   function pollTime() {
@@ -75,26 +56,48 @@
       .catch(() => {});
   }
 
-  $effect(() => {
+  function connectWS() {
+    if (usePolling) return;
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const host = import.meta.env.DEV ? `${window.location.hostname}:8080` : window.location.host;
+    const url = `${protocol}//${host}/api/ws?user=${encodeURIComponent(userId)}`;
+    ws = new WebSocket(url);
+    ws.onopen = () => { connected = true; };
+    ws.onclose = () => {
+      connected = false;
+      setTimeout(connectWS, 2000);
+    };
+    ws.onmessage = (e) => {
+      try {
+        const msg = JSON.parse(e.data);
+        if (msg.type === 'time_update' && typeof msg.time === 'number') {
+          timeSecs = msg.time;
+          zone = getZoneFromTime(timeSecs);
+        }
+      } catch (_) {}
+    };
+  }
+
+  onMount(async () => {
     if (userId && userId !== 'anonymous') {
-      initUser();
+      await initUser();
       if (usePolling) {
-        const iv = setInterval(pollTime, 2000);
-        return () => clearInterval(iv);
+        pollInterval = setInterval(pollTime, 2000);
+      } else {
+        connectWS();
       }
-      connectWS();
-      return () => ws?.close();
+      countdownInterval = setInterval(() => {
+        if (timeSecs <= 0 || (connected && !usePolling)) return;
+        timeSecs--;
+        if (timeSecs < 0) timeSecs = 0;
+      }, 1000);
     }
   });
 
-  // Countdown local: quando sem WS (produção ou offline)
-  $effect(() => {
-    if (timeSecs <= 0 || (connected && !usePolling)) return;
-    const iv = setInterval(() => {
-      timeSecs--;
-      if (timeSecs < 0) timeSecs = 0;
-    }, 1000);
-    return () => clearInterval(iv);
+  onDestroy(() => {
+    if (pollInterval) clearInterval(pollInterval);
+    if (countdownInterval) clearInterval(countdownInterval);
+    ws?.close();
   });
 </script>
 
