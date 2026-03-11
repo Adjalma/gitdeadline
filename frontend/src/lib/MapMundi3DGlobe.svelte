@@ -38,6 +38,7 @@
   let controls: OrbitControls;
   let frameId: number;
   let pointsMesh: THREE.Points | null = null;
+  let meMarker: THREE.Mesh | null = null;
   const MAX_FETCH = 100000;
   const MAX_CLUSTERS = 2500;
 
@@ -208,6 +209,30 @@
     });
     pointsMesh = new THREE.Points(geom, mat);
     scene.add(pointsMesh);
+
+    // Marcador "VOCÊ" — destaque para o usuário atual
+    if (meMarker) {
+      scene.remove(meMarker);
+      meMarker.geometry.dispose();
+      (meMarker.material as THREE.Material).dispose();
+      meMarker = null;
+    }
+    if (userId) {
+      const me = users.find((u) => u.user_id.toLowerCase() === userId.toLowerCase());
+      if (me) {
+        const [lat, lng] = latLngFromRank(me.rank, users.length);
+        const pos = latLngToVector3(lat, lng, 2.28);
+        const sphereGeom = new THREE.SphereGeometry(0.12, 12, 8);
+        const sphereMat = new THREE.MeshBasicMaterial({
+          color: 0x39ff14,
+          transparent: true,
+          opacity: 0.95,
+        });
+        meMarker = new THREE.Mesh(sphereGeom, sphereMat);
+        meMarker.position.copy(pos);
+        scene.add(meMarker);
+      }
+    }
   }
 
   function initThree() {
@@ -311,6 +336,8 @@
       renderer?.dispose();
       pointsMesh?.geometry?.dispose();
       (pointsMesh?.material as THREE.Material)?.dispose();
+      meMarker?.geometry?.dispose();
+      (meMarker?.material as THREE.Material)?.dispose();
     };
   });
 
@@ -353,8 +380,11 @@
       </div>
     {/if}
     <div class="absolute bottom-2 left-2 right-2 flex justify-between items-center text-phosphor/50 text-[10px] font-mono">
-      <span>Arraste · Scroll zoom · Pontos maiores = mais jogadores no cluster</span>
+      <span>Arraste · Scroll zoom · Pontos maiores = mais jogadores</span>
       <span class="flex gap-3">
+        {#if userId}
+          <span><span class="text-phosphor">◆</span> Você</span>
+        {/if}
         <span><span class="text-amber">●</span> /root</span>
         <span><span class="text-phosphor">●</span> /home/user</span>
         <span><span class="text-neonred">●</span> /dev/null</span>
