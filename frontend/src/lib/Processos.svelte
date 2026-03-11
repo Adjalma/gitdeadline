@@ -70,16 +70,16 @@
 </script>
 
 <div class="space-y-3">
-  <h2 class="text-phosphor/80 text-sm uppercase tracking-widest">Processos na Zona</h2>
-  <p class="text-phosphor/50 text-xs">Espectros de luz — relógio flutuante. Handshake para transferir tempo.</p>
-  <div class="space-y-2 mt-3">
+  <div class="space-y-2 mt-1">
     {#each ranking as entry (entry.user_id)}
       <div
-        class="flex items-center gap-3 py-2 px-3 rounded border border-phosphor/20 {entry.user_id === userId ? 'bg-phosphor/10' : 'bg-black/40'} hover:border-phosphor/40 transition-colors"
+        class="flex items-center gap-3 py-2.5 px-3 rounded-lg border border-phosphor/20 {entry.user_id === userId ? 'bg-phosphor/10 ring-1 ring-phosphor/40' : 'bg-black/40'} hover:border-phosphor/40 hover:shadow-[0_0_20px_rgba(57,255,20,0.1)] transition-all"
       >
-        <!-- Avatar espectro -->
-        <div class="w-10 h-10 rounded-full bg-phosphor/20 border border-phosphor/40 flex items-center justify-center text-phosphor/80 font-mono text-xs shadow-lg {glowColor(entry.score)}">
-          {entry.user_id.slice(0, 2).toUpperCase()}
+        <!-- Avatar holográfico -->
+        <div class="relative w-11 h-11 rounded-full flex items-center justify-center font-mono text-sm font-bold {glowColor(entry.score)}"
+          style="background: linear-gradient(135deg, rgba(57,255,20,0.25), rgba(57,255,20,0.05)); box-shadow: 0 0 15px rgba(57,255,20,0.3);"
+        >
+          <span class="text-phosphor/90">{entry.user_id.slice(0, 2).toUpperCase()}</span>
         </div>
         <div class="flex-1 min-w-0">
           <span class="font-mono {entry.user_id === userId ? 'text-phosphor font-bold' : 'text-phosphor/90'} truncate block">

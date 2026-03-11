@@ -125,7 +125,12 @@
 </script>
 
 <div class="space-y-6">
-  <div class="border border-phosphor/40 p-6">
+  {#if timeSecs != null && timeSecs > 0 && timeSecs < 86400}
+    <div class="text-center py-2 px-4 rounded border-2 border-neonred bg-neonred/10 animate-pulse">
+      <span class="font-mono text-neonred font-bold text-sm tracking-widest">TIME CRITICAL</span>
+    </div>
+  {/if}
+  <div class="border border-phosphor/40 p-6 rounded-2xl bg-black/40">
     <div class="flex items-center justify-between mb-4">
       <span class="text-phosphor/70 text-sm uppercase tracking-widest">LIFE REMAINING</span>
       <span class="text-xs {connected || usePolling ? 'text-phosphor' : 'text-neonred'}">
