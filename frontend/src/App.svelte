@@ -87,6 +87,6 @@
   {/if}
 
   <footer class="border-t border-phosphor/20 px-6 py-3 text-center text-phosphor/50 text-xs">
-    Tempo = histórico GitHub | PR +72h · Issue +48h · Commit +1h | Jogo 24x7
+    Tempo diminui em tempo real 24x7 (servidor) | Histórico GitHub | PR +72h · Issue +48h · Commit +1h
   </footer>
 </main>

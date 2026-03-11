@@ -79,7 +79,8 @@
       .then((r) => r.json())
       .then((d) => {
         if (d.time != null && timeSecs != null) {
-          if (d.time > timeSecs + 60 || d.time <= 0) {
+          const drift = Math.abs(d.time - timeSecs);
+          if (d.time > timeSecs + 60 || d.time <= 0 || drift > 5) {
             timeSecs = Math.max(0, d.time);
             zone = getZoneFromTime(timeSecs);
             gameZone.set(zone);
@@ -116,7 +117,7 @@
     if (userId && userId !== 'anonymous') {
       await initUser();
       if (usePolling) {
-        pollInterval = setInterval(pollTime, 10000); // Sync a cada 10s (bônus, etc)
+        pollInterval = setInterval(pollTime, 5000); // Sync a cada 5s — tempo real 24x7
       } else {
         connectWS();
       }
@@ -147,7 +148,7 @@
     <div class="flex items-center justify-between mb-4">
       <span class="text-phosphor/70 text-sm uppercase tracking-widest">LIFE REMAINING</span>
       <span class="text-xs {connected || usePolling ? 'text-phosphor' : 'text-neonred'}">
-        {usePolling ? '● SYNC' : connected ? '● LIVE' : '○ OFFLINE'}
+        {usePolling ? '● 24x7' : connected ? '● LIVE' : '○ OFFLINE'}
       </span>
     </div>
     <div
