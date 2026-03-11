@@ -3,6 +3,7 @@
   import { gameZone } from './stores.js';
   import LifeClock from './LifeClock.svelte';
   import Processos from './Processos.svelte';
+  import MapMundi from './MapMundi.svelte';
 
   export let userId: string;
   let zone: 'dev_null' | 'home_user' | 'root' = 'home_user';
@@ -125,6 +126,11 @@
           </button>
         </div>
         <p class="text-phosphor/40 text-xs mt-2">Configure o Webhook do GitHub para bônus automático.</p>
+      </div>
+
+      <!-- Mapa Mundi — The Git City 24x7 -->
+      <div class="mt-6">
+        <MapMundi {userId} />
       </div>
 
       <!-- Processos + Spectator -->

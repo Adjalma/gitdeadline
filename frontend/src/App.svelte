@@ -32,7 +32,8 @@
       <div class="max-w-md w-full space-y-6">
         <p class="text-phosphor/90 text-center text-sm leading-relaxed">
           Entre com seu GitHub para jogar na Cidadela Vertical.
-          O relógio começa em 24h. Commits, PRs e Issues concedem tempo.
+          Tempo = histórico real de contribuições (commits, PRs, issues).
+          Jogo 24x7 — nunca para.
         </p>
         {#if authError}
           <p class="text-neonred text-sm text-center">{authError}</p>
@@ -50,6 +51,6 @@
   {/if}
 
   <footer class="border-t border-phosphor/20 px-6 py-3 text-center text-phosphor/50 text-xs">
-    PR Merged +72h | Issue +48h | Commit +1h (anti-spam 1h) | Tempo decrementa 1s/s
+    Tempo = histórico GitHub | PR +72h · Issue +48h · Commit +1h | Jogo 24x7
   </footer>
 </main>

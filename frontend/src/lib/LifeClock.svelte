@@ -14,12 +14,16 @@
   const usePolling = import.meta.env.PROD;
 
   function formatTime(secs: number) {
-    if (secs <= 0) return { days: 0, hrs: 0, min: 0, sec: 0 };
+    if (secs <= 0) return { days: 0, hrs: 0, min: 0, sec: 0, compact: '' };
     const d = Math.floor(secs / 86400);
     const h = Math.floor((secs % 86400) / 3600);
     const m = Math.floor((secs % 3600) / 60);
     const s = Math.floor(secs % 60);
-    return { days: d, hrs: h, min: m, sec: s };
+    let compact = '';
+    if (secs >= 86400 * 1e6) compact = (secs / 3600 / 1e9).toFixed(1) + 'B h';
+    else if (secs >= 86400 * 1e3) compact = (secs / 3600 / 1e6).toFixed(1) + 'M h';
+    else if (secs >= 86400 * 100) compact = (secs / 3600 / 1e3).toFixed(1) + 'k h';
+    return { days: d, hrs: h, min: m, sec: s, compact };
   }
 
   function getClockColor(secs: number): string {
@@ -122,13 +126,17 @@
     <div
       class="flex gap-2 font-mono text-4xl md:text-5xl font-bold tabular-nums {getClockColor(timeSecs)}"
     >
-      <span>{formatTime(timeSecs).days.toString().padStart(3, '0')}</span>
-      <span class="opacity-50">:</span>
-      <span>{formatTime(timeSecs).hrs.toString().padStart(2, '0')}</span>
-      <span class="opacity-50">:</span>
-      <span>{formatTime(timeSecs).min.toString().padStart(2, '0')}</span>
-      <span class="opacity-50">:</span>
-      <span>{formatTime(timeSecs).sec.toString().padStart(2, '0')}</span>
+      {#if formatTime(timeSecs).compact}
+        <span>{formatTime(timeSecs).compact}</span>
+      {:else}
+        <span>{formatTime(timeSecs).days.toString().padStart(3, '0')}</span>
+        <span class="opacity-50">:</span>
+        <span>{formatTime(timeSecs).hrs.toString().padStart(2, '0')}</span>
+        <span class="opacity-50">:</span>
+        <span>{formatTime(timeSecs).min.toString().padStart(2, '0')}</span>
+        <span class="opacity-50">:</span>
+        <span>{formatTime(timeSecs).sec.toString().padStart(2, '0')}</span>
+      {/if}
     </div>
     <div class="mt-2 text-phosphor/50 text-xs font-mono">
       DAYS &nbsp;&nbsp; HRS &nbsp; MIN &nbsp; SEC

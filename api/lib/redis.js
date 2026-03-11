@@ -9,6 +9,8 @@ const redis = process.env.UPSTASH_REDIS_REST_URL
 
 const KEY_EXPIRES = 'gitdeadline:expires:';
 const KEY_RANKING = 'gitdeadline:ranking';
+const KEY_ONLINE = 'gitdeadline:online';
+const ONLINE_TTL = 120; // 2 min
 const KEY_LAST_COMMIT = 'gitdeadline:last_commit:';
 const DEFAULT_HOURS = 24;
 const SPAM_COOLDOWN = 3600;
@@ -25,6 +27,20 @@ export async function getTime(userId) {
   const now = Math.floor(Date.now() / 1000);
   const time = Math.max(0, Number(expiresAt) - now);
   return { time };
+}
+
+export async function recordPresence(userId) {
+  if (!redis) return;
+  const now = Math.floor(Date.now() / 1000);
+  await redis.zadd(KEY_ONLINE, { score: now, member: userId });
+  await redis.zremrangebyscore(KEY_ONLINE, 0, now - ONLINE_TTL);
+}
+
+export async function getOnlineUsers() {
+  if (!redis) return new Set();
+  const now = Math.floor(Date.now() / 1000);
+  const members = await redis.zrangebyscore(KEY_ONLINE, now - ONLINE_TTL, '+inf');
+  return new Set(members);
 }
 
 export async function initUser(userId) {
@@ -84,6 +100,41 @@ export async function transferTime(fromUserId, toUserId, seconds) {
   await redis.zadd(KEY_RANKING, { score: newFromExp, member: fromUserId });
   await redis.zadd(KEY_RANKING, { score: newToExp, member: toUserId });
   return { ok: true, transferred: seconds };
+}
+
+export async function syncFromHistory(userId, computedSeconds) {
+  if (!redis) return { ok: false, error: 'Redis não configurado' };
+  const now = Math.floor(Date.now() / 1000);
+  const existing = await redis.get(KEY_EXPIRES + userId);
+  let expiresAt;
+  if (existing) {
+    const currentRemaining = Math.max(0, Number(existing) - now);
+    expiresAt = now + Math.max(computedSeconds, currentRemaining);
+  } else {
+    expiresAt = now + Math.max(computedSeconds, 3600);
+  }
+  await redis.set(KEY_EXPIRES + userId, expiresAt);
+  await redis.zadd(KEY_RANKING, { score: expiresAt, member: userId });
+  return { ok: true, time: Math.max(0, expiresAt - now) };
+}
+
+export async function getAllUsersForMap(limit = 500) {
+  if (!redis) return { users: [], online: [] };
+  const [results, onlineSet] = await Promise.all([
+    redis.zrange(KEY_RANKING, 0, limit - 1, { rev: true, withScores: true }),
+    getOnlineUsers(),
+  ]);
+  const now = Math.floor(Date.now() / 1000);
+  const users = results.map((r, i) => ({
+    user_id: r.member,
+    score: Math.max(0, r.score - now),
+    rank: i + 1,
+    online: onlineSet.has(r.member),
+  }));
+  return {
+    users,
+    online: [...onlineSet],
+  };
 }
 
 export async function getRanking(limit = 50) {
