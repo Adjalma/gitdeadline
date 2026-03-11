@@ -87,3 +87,11 @@ Configure em **Settings → Webhooks** do repositório:
 - `GET /api/ranking` — top 50 por longevidade
 - `POST /api/user/{user}/init` — inicializa usuário (24h)
 - `GET /api/ws?user=X` — WebSocket para updates em tempo real
+
+## Deploy no Vercel
+
+1. Conecte o repositório ao [Vercel](https://vercel.com)
+2. Configure o [Upstash Redis](https://console.upstash.com): crie um banco e adicione as variáveis:
+   - `UPSTASH_REDIS_REST_URL`
+   - `UPSTASH_REDIS_REST_TOKEN`
+3. Deploy
