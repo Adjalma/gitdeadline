@@ -25,7 +25,7 @@
       window.history.replaceState({}, '', '/');
     } else {
       try {
-        const res = await fetch('/api/auth/me', { credentials: 'include' });
+        const res = await fetch('/api/auth/status', { credentials: 'include' });
         const data = await res.json();
         if (data.user) {
           userId = data.user;
@@ -75,7 +75,7 @@
           ENTRAR COM GITHUB
         </a>
         <a
-          href="/api/auth/logout"
+          href="/api/auth/status?logout=1"
           class="block w-full text-center text-phosphor/50 hover:text-phosphor text-xs underline"
         >
           Limpar sessão e fazer logout

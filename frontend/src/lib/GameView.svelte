@@ -48,7 +48,7 @@
       </h1>
       <div class="flex items-center gap-4">
         <span class="text-amber/70 text-xs font-mono">CÓDIGO = TEMPO</span>
-        <a href="/api/auth/logout" class="text-phosphor/50 hover:text-phosphor text-xs">
+        <a href="/api/auth/status?logout=1" class="text-phosphor/50 hover:text-phosphor text-xs">
           Sair
         </a>
       </div>

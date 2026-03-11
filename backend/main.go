@@ -39,8 +39,7 @@ func main() {
 	mux := http.NewServeMux()
 
 	// API REST
-	mux.HandleFunc("GET /api/auth/me", handleAuthMe())
-	mux.HandleFunc("GET /api/auth/logout", handleLogout())
+	mux.HandleFunc("GET /api/auth/status", handleAuthStatus())
 	mux.HandleFunc("GET /api/time/{user}", handleGetTime(te))
 	mux.HandleFunc("GET /api/ranking", handleGetRanking(te))
 	mux.HandleFunc("POST /api/user/{user}/init", handleInitUser(rs))
@@ -75,27 +74,28 @@ func runDecrementWorker(ctx context.Context, rs *store.RedisStore, hub *websocke
 	}
 }
 
-func handleLogout() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		http.SetCookie(w, &http.Cookie{Name: "gh_token", Value: "", Path: "/", MaxAge: -1})
-		http.SetCookie(w, &http.Cookie{Name: "gh_user", Value: "", Path: "/", MaxAge: -1})
-		http.Redirect(w, r, "/?logout=1", 302)
-	}
-}
-
-func handleAuthMe() http.HandlerFunc {
+func handleAuthStatus() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Credentials", "true")
-		cookie, err := r.Cookie("gh_user")
-		if err != nil || cookie.Value == "" {
-			json.NewEncoder(w).Encode(map[string]interface{}{"user": nil})
+		if r.URL.Query().Get("logout") == "1" {
+			http.SetCookie(w, &http.Cookie{Name: "gh_token", Value: "", Path: "/", MaxAge: -1})
+			http.SetCookie(w, &http.Cookie{Name: "gh_user", Value: "", Path: "/", MaxAge: -1})
+			http.Redirect(w, r, "/?logout=1", 302)
 			return
 		}
-		u, _ := url.QueryUnescape(cookie.Value)
-		if u == "" {
-			u = cookie.Value
+		cookie, err := r.Cookie("gh_user")
+		user := interface{}(nil)
+		if err == nil && cookie.Value != "" {
+			u, _ := url.QueryUnescape(cookie.Value)
+			if u == "" {
+				u = cookie.Value
+			}
+			user = strings.ToLower(u)
 		}
-		json.NewEncoder(w).Encode(map[string]interface{}{"user": strings.ToLower(u)})
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"user":        user,
+			"githubOAuth": os.Getenv("GITHUB_CLIENT_ID") != "" && os.Getenv("GITHUB_CLIENT_SECRET") != "",
+		})
 	}
 }
 
