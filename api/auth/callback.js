@@ -1,3 +1,5 @@
+const COOKIE_OPTS = 'Path=/; HttpOnly; SameSite=Lax; Max-Age=3600';
+
 export default async function handler(req, res) {
   const { code } = req.query;
   const clientId = process.env.GITHUB_CLIENT_ID;
@@ -6,6 +8,7 @@ export default async function handler(req, res) {
     return res.redirect('/?error=auth_failed');
   }
   const redirectUri = `${req.headers['x-forwarded-proto'] || 'https'}://${req.headers['x-forwarded-host'] || req.headers.host}/api/auth/callback`;
+  const isSecure = (req.headers['x-forwarded-proto'] || '').startsWith('https');
   try {
     const tokenRes = await fetch('https://github.com/login/oauth/access_token', {
       method: 'POST',
@@ -20,7 +23,12 @@ export default async function handler(req, res) {
       headers: { Authorization: `Bearer ${tokenData.access_token}` },
     });
     const user = await userRes.json();
-    const username = user.login || 'anonymous';
+    const username = (user.login || 'anonymous').toLowerCase();
+    const secure = isSecure ? '; Secure' : '';
+    res.setHeader('Set-Cookie', [
+      `gh_token=${tokenData.access_token}; ${COOKIE_OPTS}${secure}`,
+      `gh_user=${username}; Path=/; SameSite=Lax; Max-Age=3600${secure}`,
+    ]);
     return res.redirect(302, `/?user=${encodeURIComponent(username)}`);
   } catch (e) {
     return res.redirect('/?error=auth_failed');

@@ -40,9 +40,18 @@
     return 'root';
   }
 
-  async function initUser() {
-    const res = await fetch(`/api/user/${userId}/init`, { method: 'POST' });
+  let initError = '';
+
+  async function initUser(forceSync = false) {
+    initError = '';
+    const url = forceSync ? `/api/user/${userId}/init?sync=1` : `/api/user/${userId}/init`;
+    const res = await fetch(url, { method: 'POST', credentials: 'include' });
     const data = await res.json();
+    if (data.error) {
+      initError = data.error;
+      timeSecs = null;
+      return;
+    }
     if (data.time != null) {
       timeSecs = data.time;
       zone = getZoneFromTime(timeSecs);
@@ -127,7 +136,7 @@
       class="flex gap-2 font-mono text-4xl md:text-5xl font-bold tabular-nums {timeSecs != null ? getClockColor(timeSecs) : 'text-phosphor/50'}"
     >
       {#if timeSecs == null}
-        <span class="text-phosphor/70">Carregando histórico GitHub...</span>
+        <span class="text-phosphor/70">{initError ? 'Erro ao carregar' : 'Carregando histórico GitHub...'}</span>
       {:else if formatTime(timeSecs).compact}
         <span>{formatTime(timeSecs).compact}</span>
       {:else}
@@ -147,7 +156,12 @@
     {/if}
   </div>
 
-  {#if timeSecs != null && timeSecs <= 0}
+  {#if initError}
+    <div class="mt-3 p-4 border border-neonred/50 bg-neonred/10 text-neonred text-sm">
+      {initError}
+      <a href="/api/auth/github" class="block mt-3 underline font-bold">Fazer login novamente</a>
+    </div>
+  {:else if timeSecs != null && timeSecs <= 0}
     <div class="border-2 border-neonred p-8 text-neonred text-center rounded">
       <p class="text-3xl font-bold tracking-wider">MORTE DIGITAL</p>
       <p class="text-sm mt-3 opacity-90">O Arquivo dos Ecos — seu perfil foi petrificado.</p>
@@ -160,10 +174,20 @@
       </a>
     </div>
   {:else if timeSecs != null}
-    <div class="text-phosphor/60 text-xs">
-      Zona atual: <span class="text-phosphor font-bold">
-        {zone === 'dev_null' ? '/dev/null' : zone === 'home_user' ? '/home/user' : '/root'}
-      </span>
+    <div class="text-phosphor/60 text-xs space-y-2">
+      <div>
+        Zona atual: <span class="text-phosphor font-bold">
+          {zone === 'dev_null' ? '/dev/null' : zone === 'home_user' ? '/home/user' : '/root'}
+        </span>
+      </div>
+      <div class="flex gap-2">
+        <button
+          on:click={() => initUser(true)}
+          class="text-phosphor/60 hover:text-phosphor text-xs underline"
+        >
+          Atualizar histórico GitHub
+        </button>
+      </div>
     </div>
   {/if}
 </div>

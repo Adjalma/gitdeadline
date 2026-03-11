@@ -9,7 +9,7 @@
     const params = new URLSearchParams(window.location.search);
     const userFromUrl = params.get('user');
     if (userFromUrl) {
-      userId = userFromUrl;
+      userId = userFromUrl.toLowerCase();
       window.history.replaceState({}, '', '/');
     }
     const err = params.get('error');
