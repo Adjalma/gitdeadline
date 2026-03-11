@@ -18,6 +18,11 @@ export default async function handler(req, res) {
   try {
     if (req.query.map === '1' || req.query.map === 'true') {
       const limit = Math.min(parseInt(req.query.limit, 10) || 500, 1000);
+      const ping = (req.query.ping || '').toLowerCase();
+      if (ping) {
+        const { recordPresence } = await import('./lib/redis.js');
+        recordPresence(ping).catch(() => {});
+      }
       const { users = [], online = [] } = await getAllUsersForMap(limit);
       return res.json({
         users: (users || []).map((u) => ({

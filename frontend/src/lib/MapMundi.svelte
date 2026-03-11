@@ -43,7 +43,8 @@
 
   async function fetchMap() {
     try {
-      const res = await fetch('/api/ranking?map=1&limit=200');
+      const url = `/api/ranking?map=1&limit=200${userId ? `&ping=${encodeURIComponent(userId)}` : ''}`;
+      const res = await fetch(url, { credentials: 'include' });
       const text = await res.text();
       try {
         const data = text ? JSON.parse(text) : {};
@@ -113,7 +114,7 @@
               stroke={u.online ? '#fff' : 'none'}
               stroke-width="0.3"
             />
-            {#if u.user_id === userId}
+            {#if userId && u.user_id === userId.toLowerCase()}
               <rect x={x - 0.5} y={y - 1} width="6" height="1.5" fill="#fff" opacity="0.9"/>
             {/if}
           </g>
@@ -132,7 +133,7 @@
           <div class="flex flex-wrap gap-2 mt-1">
             {#each users.filter((u) => u.online) as u}
               <span
-                class="px-2 py-0.5 rounded border {u.user_id === userId ? 'border-phosphor bg-phosphor/20 text-phosphor' : 'border-phosphor/40 text-phosphor/80'} text-xs font-mono"
+                class="px-2 py-0.5 rounded border {userId && u.user_id === userId.toLowerCase() ? 'border-phosphor bg-phosphor/20 text-phosphor' : 'border-phosphor/40 text-phosphor/80'} text-xs font-mono"
               >
                 {u.user_id}
                 <span class="text-phosphor/50 ml-1">({formatHours(u.hours)}h)</span>
