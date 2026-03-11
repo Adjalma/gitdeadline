@@ -5,7 +5,7 @@
    */
   import { onMount } from 'svelte';
   import * as THREE from 'three';
-  import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+  import { TrackballControls } from 'three/examples/jsm/controls/TrackballControls.js';
   import { triggerMapRefresh, triggerTimeRefresh } from './stores.js';
 
   export let userId: string;
@@ -35,7 +35,7 @@
   let scene: THREE.Scene;
   let camera: THREE.PerspectiveCamera;
   let renderer: THREE.WebGLRenderer;
-  let controls: OrbitControls;
+  let controls: InstanceType<typeof TrackballControls>;
   let frameId: number;
   let pointsMesh: THREE.Points | null = null;
   let meMarker: THREE.Mesh | null = null;
@@ -249,13 +249,15 @@
     renderer.setSize(w, h);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     containerEl.appendChild(renderer.domElement);
-    controls = new OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.05;
-    controls.minDistance = 2.5;
-    controls.maxDistance = 15;
-    controls.autoRotate = true;
-    controls.autoRotateSpeed = 0.3;
+    controls = new TrackballControls(camera, renderer.domElement);
+    controls.target.set(0, 0, 0);
+    controls.minDistance = 1.8;
+    controls.maxDistance = 50;
+    controls.rotateSpeed = 1.2;
+    controls.zoomSpeed = 1.5;
+    controls.panSpeed = 0.8;
+    controls.staticMoving = false;
+    controls.dynamicDampingFactor = 0.15;
     const ambient = new THREE.AmbientLight(0x111122);
     scene.add(ambient);
     const dir = new THREE.DirectionalLight(0x39ff14, 0.5);
@@ -296,6 +298,7 @@
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
     renderer.setSize(w, h);
+    controls?.handleResize?.();
   }
 
   let unsubMap: (() => void) | undefined;
@@ -380,7 +383,7 @@
       </div>
     {/if}
     <div class="absolute bottom-2 left-2 right-2 flex justify-between items-center text-phosphor/50 text-[10px] font-mono">
-      <span>Arraste · Scroll zoom · Pontos maiores = mais jogadores</span>
+      <span>Arraste livre · Scroll zoom · Pan com botão direito</span>
       <span class="flex gap-3">
         {#if userId}
           <span><span class="text-phosphor">◆</span> Você</span>
