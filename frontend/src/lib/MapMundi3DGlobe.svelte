@@ -208,12 +208,17 @@
       if (users.length === 0 && userId) {
         try {
           const r = await fetch(`/api/user/${userId}/init?sync=1`, { method: 'POST', credentials: 'include' });
+          const data = await r.json().catch(() => ({}));
           if (r.ok) {
             await new Promise((x) => setTimeout(x, 800));
             await fetchMap(true);
             if (scene) updateScene();
+          } else {
+            syncError = data?.error || `Erro ${r.status}`;
           }
-        } catch (_) {}
+        } catch (e) {
+          syncError = (e as Error)?.message || 'Erro ao sincronizar';
+        }
       }
       window.addEventListener('resize', onResize);
       iv = setInterval(() => fetchMap().then(() => updateScene()), 15000);

@@ -17,6 +17,7 @@
   let users: MapUser[] = [];
   let onlineCount = 0;
   let loading = true;
+  let syncError = '';
 
   const zoneConfig: Record<Zone, { color: string; glow: string; label: string; status: string }> = {
     root: { color: '#ffbf00', glow: 'rgba(255,191,0,0.6)', label: '/root', status: 'pristine' },
@@ -77,11 +78,16 @@
     if (users.length === 0 && userId) {
       try {
         const r = await fetch(`/api/user/${userId}/init?sync=1`, { method: 'POST', credentials: 'include' });
+        const data = await r.json().catch(() => ({}));
         if (r.ok) {
           await new Promise((x) => setTimeout(x, 800));
           await fetchMap();
+        } else {
+          syncError = data?.error || `Erro ${r.status}`;
         }
-      } catch (_) {}
+      } catch (e) {
+        syncError = (e as Error)?.message || 'Erro';
+      }
     }
     unsubMap = triggerMapRefresh.subscribe((v) => {
       if (v > 0) fetchMap();
