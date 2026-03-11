@@ -75,17 +75,24 @@
   }
 
   function pollTime() {
-    fetch(`/api/time/${userId}`, { credentials: 'include' })
-      .then((r) => r.json())
+    fetch(`/api/time?user=${encodeURIComponent(userId)}`, { credentials: 'include' })
+      .then(async (r) => {
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(d?.error || `HTTP ${r.status}`);
+        return d;
+      })
       .then((d) => {
-        if (d.time != null) {
+        if (d && typeof d.time === 'number') {
           const newTime = Math.max(0, d.time);
           timeSecs = newTime;
           zone = getZoneFromTime(newTime);
           gameZone.set(zone);
+          initError = '';
         }
       })
-      .catch(() => {});
+      .catch((err) => {
+        if (timeSecs == null && !initError) initError = err?.message || 'Erro ao buscar tempo';
+      });
   }
 
   function connectWS() {

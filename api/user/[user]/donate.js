@@ -5,7 +5,7 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(204).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const fromUser = (req.query.user || '').toLowerCase();
+  const fromUser = (req.query?.user || (req.url || '').match(/\/user\/([^/?]+)\/donate/)?.[1] || '').toLowerCase();
   let body = {};
   try {
     body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : req.body || {};

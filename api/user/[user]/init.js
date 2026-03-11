@@ -12,6 +12,12 @@ function getTokenFromCookie(cookieHeader) {
   return m ? m[1].trim() : null;
 }
 
+function getUserFromRequest(req) {
+  if (req.query?.user) return req.query.user.toLowerCase();
+  const match = (req.url || '').match(/\/user\/([^/?]+)\/init/);
+  return match ? match[1].toLowerCase() : '';
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
   res.setHeader('Access-Control-Allow-Credentials', 'true');
@@ -19,7 +25,7 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
-    const user = (req.query.user || '').toLowerCase();
+    const user = getUserFromRequest(req);
     if (!user) return res.status(400).json({ error: 'user required' });
 
     recordPresence(user).catch(() => {});
@@ -67,6 +73,13 @@ export default async function handler(req, res) {
     }
     return res.json(payload);
   } catch (e) {
-    return res.status(500).json({ error: e.message || 'Erro ao inicializar', time: null });
+    const msg = e.message || 'Erro ao inicializar';
+    const isReadOnly = /NOPERM|read.?only|permission|denied/i.test(String(msg));
+    return res.status(500).json({
+      error: isReadOnly
+        ? 'Token Read-Only no Upstash. Use o token DEFAULT (com permissão de escrita).'
+        : msg,
+      time: null,
+    });
   }
 }
