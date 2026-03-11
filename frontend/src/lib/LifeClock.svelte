@@ -45,19 +45,32 @@
   async function initUser(forceSync = false) {
     initError = '';
     const url = forceSync ? `/api/user/${userId}/init?sync=1` : `/api/user/${userId}/init`;
-    const res = await fetch(url, { method: 'POST', credentials: 'include' });
-    const data = await res.json();
-    if (data.error) {
-      initError = data.error;
+    try {
+      const res = await fetch(url, { method: 'POST', credentials: 'include' });
+      const text = await res.text();
+      let data: { error?: string; time?: number } = {};
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch (_) {
+        initError = res.ok ? 'Resposta inválida' : `Erro ${res.status}: ${text.slice(0, 100)}`;
+        timeSecs = null;
+        return;
+      }
+      if (data.error) {
+        initError = data.error;
+        timeSecs = null;
+        return;
+      }
+      if (data.time != null) {
+        timeSecs = data.time;
+        zone = getZoneFromTime(timeSecs);
+        gameZone.set(zone);
+      } else {
+        timeSecs = 0;
+      }
+    } catch (e) {
+      initError = (e as Error).message || 'Erro de conexão';
       timeSecs = null;
-      return;
-    }
-    if (data.time != null) {
-      timeSecs = data.time;
-      zone = getZoneFromTime(timeSecs);
-      gameZone.set(zone);
-    } else {
-      timeSecs = 0;
     }
   }
 

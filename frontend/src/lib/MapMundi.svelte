@@ -44,9 +44,14 @@
   async function fetchMap() {
     try {
       const res = await fetch('/api/ranking?map=1&limit=200');
-      const data = await res.json();
-      users = data.users || [];
-      onlineCount = data.online_count || 0;
+      const text = await res.text();
+      try {
+        const data = text ? JSON.parse(text) : {};
+        users = data.users ?? [];
+        onlineCount = data.online_count || 0;
+      } catch (_) {
+        users = [];
+      }
     } catch (_) {
       users = [];
     } finally {

@@ -127,18 +127,31 @@ export async function syncFromHistory(userId, computedSeconds) {
   return { ok: true, time: Math.max(0, expiresAt - now) };
 }
 
+function parseZRangeWithScores(arr) {
+  const out = [];
+  for (let i = 0; i < arr.length; i += 2) {
+    out.push({ member: arr[i], score: Number(arr[i + 1] ?? 0) });
+  }
+  return out;
+}
+
 export async function getAllUsersForMap(limit = 500) {
   if (!redis) return { users: [], online: [] };
-  const [results, onlineSet] = await Promise.all([
+  const [rawResults, onlineSet] = await Promise.all([
     redis.zrange(KEY_RANKING, 0, limit - 1, { rev: true, withScores: true }),
     getOnlineUsers(),
   ]);
+  const results = Array.isArray(rawResults) && rawResults.length > 0
+    ? (typeof rawResults[0] === 'object' && 'member' in rawResults[0]
+        ? rawResults
+        : parseZRangeWithScores(rawResults))
+    : [];
   const now = Math.floor(Date.now() / 1000);
   const users = results.map((r, i) => ({
-    user_id: r.member,
-    score: Math.max(0, r.score - now),
+    user_id: r.member ?? r[0],
+    score: Math.max(0, (r.score ?? r[1] ?? 0) - now),
     rank: i + 1,
-    online: onlineSet.has(r.member),
+    online: onlineSet.has(r.member ?? r[0]),
   }));
   return {
     users,
@@ -148,11 +161,14 @@ export async function getAllUsersForMap(limit = 500) {
 
 export async function getRanking(limit = 50) {
   if (!redis) return { ranking: [] };
-  const results = await redis.zrange(KEY_RANKING, 0, limit - 1, { rev: true, withScores: true });
+  const raw = await redis.zrange(KEY_RANKING, 0, limit - 1, { rev: true, withScores: true });
+  const results = Array.isArray(raw) && raw.length > 0
+    ? (typeof raw[0] === 'object' && 'member' in raw[0] ? raw : parseZRangeWithScores(raw))
+    : [];
   const now = Math.floor(Date.now() / 1000);
   const ranking = results.map((r, i) => ({
-    user_id: r.member,
-    score: Math.max(0, r.score - now),
+    user_id: r.member ?? r[0],
+    score: Math.max(0, (r.score ?? r[1] ?? 0) - now),
     rank: i + 1,
   }));
   return { ranking };

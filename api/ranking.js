@@ -15,20 +15,24 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(204).end();
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
-  if (req.query.map === '1' || req.query.map === 'true') {
-    const limit = Math.min(parseInt(req.query.limit, 10) || 500, 1000);
-    const { users, online } = await getAllUsersForMap(limit);
-    return res.json({
-      users: users.map((u) => ({
-        user_id: u.user_id,
-        hours: Math.floor(u.score / 3600),
-        rank: u.rank,
-        zone: getZoneFromHours(u.score / 3600),
-        online: !!u.online,
-      })),
-      online_count: online.length,
-    });
+  try {
+    if (req.query.map === '1' || req.query.map === 'true') {
+      const limit = Math.min(parseInt(req.query.limit, 10) || 500, 1000);
+      const { users = [], online = [] } = await getAllUsersForMap(limit);
+      return res.json({
+        users: (users || []).map((u) => ({
+          user_id: u.user_id,
+          hours: Math.floor((u.score || 0) / 3600),
+          rank: u.rank,
+          zone: getZoneFromHours((u.score || 0) / 3600),
+          online: !!u.online,
+        })),
+        online_count: (online || []).length,
+      });
+    }
+    const { ranking = [] } = await getRanking(50);
+    return res.json({ ranking: ranking || [] });
+  } catch (e) {
+    return res.status(500).json({ error: e.message || 'Erro no ranking', users: [], ranking: [] });
   }
-  const { ranking } = await getRanking(50);
-  return res.json({ ranking });
 }
