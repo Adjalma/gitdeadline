@@ -1,7 +1,9 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { triggerMapRefresh, triggerTimeRefresh } from './stores.js';
 
   export let userId: string;
+  let unsubMap: (() => void) | undefined;
 
   type Zone = 'dev_null' | 'home_user' | 'root';
   interface MapUser {
@@ -58,10 +60,28 @@
     return users.filter((u) => u.zone === zone);
   }
 
+  async function syncAndRefresh() {
+    if (!userId) return;
+    try {
+      const res = await fetch(`/api/user/${userId}/init?sync=1`, { method: 'POST', credentials: 'include' });
+      if (res.ok) {
+        triggerTimeRefresh.update((n) => n + 1);
+        triggerMapRefresh.update((n) => n + 1);
+      }
+      await fetchMap();
+    } catch (_) {}
+  }
+
   onMount(() => {
     fetchMap();
+    unsubMap = triggerMapRefresh.subscribe((v) => {
+      if (v > 0) fetchMap();
+    });
     const iv = setInterval(fetchMap, 15000);
-    return () => clearInterval(iv);
+    return () => {
+      clearInterval(iv);
+      unsubMap?.();
+    };
   });
 </script>
 
@@ -191,6 +211,21 @@
           </div>
         </div>
       </div>
+
+      {#if users.length === 0}
+        <div class="mt-4 p-4 rounded-lg border border-amber/40 bg-amber/5">
+          <p class="text-amber/90 text-sm font-mono font-bold">Mapa vazio — Nenhum jogador no ranking</p>
+          <p class="text-phosphor/70 text-xs mt-2">
+            Use o token <strong>DEFAULT</strong> (não Read-Only) no Upstash. Depois, re-sincronize para aparecer no mapa.
+          </p>
+          <button
+            on:click={syncAndRefresh}
+            class="mt-3 px-4 py-2 border border-phosphor/50 text-phosphor hover:bg-phosphor/10 text-xs font-mono transition-all"
+          >
+            Re-sincronizar para aparecer no mapa
+          </button>
+        </div>
+      {/if}
 
       <!-- Legenda punk -->
       <div class="mt-4 flex flex-wrap gap-6 text-phosphor/60 text-xs font-mono">

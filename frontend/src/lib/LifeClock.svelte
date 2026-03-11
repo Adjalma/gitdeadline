@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
-  import { gameZone } from './stores.js';
+  import { gameZone, triggerTimeRefresh } from './stores.js';
 
   export let userId: string;
 
@@ -75,16 +75,14 @@
   }
 
   function pollTime() {
-    fetch(`/api/time/${userId}`)
+    fetch(`/api/time/${userId}`, { credentials: 'include' })
       .then((r) => r.json())
       .then((d) => {
-        if (d.time != null && timeSecs != null) {
-          const drift = Math.abs(d.time - timeSecs);
-          if (d.time > timeSecs + 60 || d.time <= 0 || drift > 5) {
-            timeSecs = Math.max(0, d.time);
-            zone = getZoneFromTime(timeSecs);
-            gameZone.set(zone);
-          }
+        if (d.time != null) {
+          const newTime = Math.max(0, d.time);
+          timeSecs = newTime;
+          zone = getZoneFromTime(newTime);
+          gameZone.set(zone);
         }
       })
       .catch(() => {});
@@ -113,11 +111,24 @@
     };
   }
 
+  let unsubRefresh: (() => void) | undefined;
+  let unsubVisibility: (() => void) | undefined;
   onMount(async () => {
     if (userId && userId !== 'anonymous') {
       await initUser();
+      unsubRefresh = triggerTimeRefresh.subscribe((v) => {
+        if (v > 0) {
+          pollTime();
+          initUser(true).catch(() => {});
+        }
+      });
       if (usePolling) {
-        pollInterval = setInterval(pollTime, 5000); // Sync a cada 5s — tempo real 24x7
+        pollInterval = setInterval(pollTime, 2000); // Sync a cada 2s — tempo real 24x7
+        const onVisibility = () => {
+          if (document.visibilityState === 'visible') pollTime();
+        };
+        document.addEventListener('visibilitychange', onVisibility);
+        unsubVisibility = () => document.removeEventListener('visibilitychange', onVisibility);
       } else {
         connectWS();
       }
@@ -132,6 +143,8 @@
   });
 
   onDestroy(() => {
+    unsubRefresh?.();
+    unsubVisibility?.();
     if (pollInterval) clearInterval(pollInterval);
     if (countdownInterval) clearInterval(countdownInterval);
     ws?.close();

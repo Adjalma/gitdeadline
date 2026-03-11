@@ -1,11 +1,30 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { gameZone } from './stores.js';
+  import { gameZone, triggerTimeRefresh } from './stores.js';
   import LifeClock from './LifeClock.svelte';
   import Processos from './Processos.svelte';
   import MapMundi from './MapMundi.svelte';
+  import MapMundi3D from './MapMundi3D.svelte';
 
   export let userId: string;
+
+  const MAP_STORAGE = 'gitdeadline_map_mode';
+  let mapMode: '2d' | '3d' = '3d';
+  try {
+    const stored = localStorage.getItem(MAP_STORAGE);
+    if (stored === '2d' || stored === '3d') mapMode = stored;
+  } catch (_) {}
+  function setMapMode(m: '2d' | '3d') {
+    mapMode = m;
+    try {
+      localStorage.setItem(MAP_STORAGE, m);
+    } catch (_) {}
+  }
+
+  async function addBonus(event: string) {
+    const res = await fetch(`/api/user/${userId}/bonus?event=${event}`, { method: 'POST', credentials: 'include' });
+    if (res.ok) triggerTimeRefresh.update((n) => n + 1);
+  }
   let zone: 'dev_null' | 'home_user' | 'root' = 'home_user';
 
   const unsub = gameZone.subscribe((z) => { zone = z; });
@@ -129,15 +148,15 @@
         <p class="text-phosphor/50 text-xs">Mineração de tempo. PR e Issues concedem vida.</p>
         <div class="flex flex-wrap gap-2">
           <button
-            on:click={async () => { await fetch(`/api/user/${userId}/bonus?event=commit`, { method: 'POST' }); }}
+            on:click={() => addBonus('commit')}
             class="px-4 py-2 border border-phosphor/50 text-phosphor hover:bg-phosphor/10 text-sm font-mono transition-all hover:shadow-[0_0_15px_rgba(57,255,20,0.3)]"
           >+1h Commit</button>
           <button
-            on:click={async () => { await fetch(`/api/user/${userId}/bonus?event=pr_merged`, { method: 'POST' }); }}
+            on:click={() => addBonus('pr_merged')}
             class="px-4 py-2 border border-amber/50 text-amber hover:bg-amber/10 text-sm font-mono transition-all hover:shadow-[0_0_15px_rgba(255,191,0,0.3)]"
           >+72h PR</button>
           <button
-            on:click={async () => { await fetch(`/api/user/${userId}/bonus?event=issue_resolved`, { method: 'POST' }); }}
+            on:click={() => addBonus('issue_resolved')}
             class="px-4 py-2 border border-phosphor/50 text-phosphor/80 hover:bg-phosphor/10 text-sm font-mono transition-all"
           >+48h Issue</button>
         </div>
@@ -145,8 +164,33 @@
       </div>
     </section>
 
-    <!-- MAPA MUNDI — The Git City 24x7 -->
-    <MapMundi {userId} />
+    <!-- MAPA MUNDI — Git Deadline 24x7 -->
+    <div class="space-y-3">
+      <div class="flex items-center justify-between">
+        <span class="text-phosphor/60 text-xs font-mono uppercase tracking-wider">
+          Visualização do mapa
+        </span>
+        <div class="flex rounded-lg border border-phosphor/30 overflow-hidden">
+          <button
+            on:click={() => setMapMode('2d')}
+            class="px-3 py-1.5 text-xs font-mono transition-all {mapMode === '2d' ? 'bg-phosphor/20 text-phosphor border-r border-phosphor/30' : 'text-phosphor/60 hover:text-phosphor hover:bg-phosphor/5'}"
+          >
+            2D
+          </button>
+          <button
+            on:click={() => setMapMode('3d')}
+            class="px-3 py-1.5 text-xs font-mono transition-all {mapMode === '3d' ? 'bg-phosphor/20 text-phosphor border-l border-phosphor/30' : 'text-phosphor/60 hover:text-phosphor hover:bg-phosphor/5'}"
+          >
+            3D
+          </button>
+        </div>
+      </div>
+      {#if mapMode === '2d'}
+        <MapMundi {userId} />
+      {:else}
+        <MapMundi3D {userId} />
+      {/if}
+    </div>
 
     <!-- PLAYER AVATARS — Processos + Spectator -->
     <section class="grid grid-cols-1 md:grid-cols-2 gap-6">
