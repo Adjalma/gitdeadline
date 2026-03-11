@@ -190,7 +190,11 @@
     </div>
     {#if timeSecs != null}
       <div class="mt-2 text-phosphor/50 text-xs font-mono">
-        DAYS &nbsp;&nbsp; HRS &nbsp; MIN &nbsp; SEC
+        {#if formatTime(timeSecs).compact}
+          {formatTime(timeSecs).days} dias · {formatTime(timeSecs).hrs}h {formatTime(timeSecs).min}m {formatTime(timeSecs).sec}s
+        {:else}
+          DAYS &nbsp;&nbsp; HRS &nbsp; MIN &nbsp; SEC
+        {/if}
       </div>
     {/if}
   </div>

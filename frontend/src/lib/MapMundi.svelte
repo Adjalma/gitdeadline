@@ -213,14 +213,16 @@
       </div>
 
       {#if users.length === 0}
-        <div class="mt-4 p-4 rounded-lg border border-amber/40 bg-amber/5">
-          <p class="text-amber/90 text-sm font-mono font-bold">Mapa vazio — Nenhum jogador no ranking</p>
+        <div class="mt-4 p-5 rounded-lg border-2 border-amber/50 bg-amber/5">
+          <p class="text-amber font-mono font-bold">Mapa vazio — Token Read-Only no Upstash</p>
           <p class="text-phosphor/70 text-xs mt-2">
-            Use o token <strong>DEFAULT</strong> (não Read-Only) no Upstash. Depois, re-sincronize para aparecer no mapa.
+            1. <a href="https://console.upstash.com" target="_blank" rel="noopener" class="text-phosphor underline">Upstash</a> → seu banco → REST
+            <br>2. Token <strong class="text-amber">Default</strong> (não Read-Only) → copie na Vercel
+            <br>3. Redeploy → clique abaixo
           </p>
           <button
             on:click={syncAndRefresh}
-            class="mt-3 px-4 py-2 border border-phosphor/50 text-phosphor hover:bg-phosphor/10 text-xs font-mono transition-all"
+            class="mt-3 px-4 py-2 border-2 border-phosphor text-phosphor hover:bg-phosphor hover:text-black text-xs font-mono font-bold transition-all"
           >
             Re-sincronizar para aparecer no mapa
           </button>

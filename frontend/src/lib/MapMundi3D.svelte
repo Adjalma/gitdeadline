@@ -296,14 +296,21 @@
     {/if}
     <div bind:this={containerEl} class="w-full h-[320px] min-h-[320px]"></div>
     {#if !loading && users.length === 0}
-      <div class="absolute inset-0 flex flex-col items-center justify-center bg-black/60 z-10 p-4">
-        <p class="text-amber/90 text-sm font-mono font-bold text-center">Mapa vazio — Nenhum jogador no ranking</p>
-        <p class="text-phosphor/70 text-xs mt-2 text-center">
-          Use o token <strong>DEFAULT</strong> (não Read-Only) no Upstash.
+      <div class="absolute inset-0 flex flex-col items-center justify-center bg-black/80 z-10 p-6 max-w-md mx-auto">
+        <p class="text-amber font-mono font-bold text-center text-base">Mapa vazio</p>
+        <p class="text-phosphor/80 text-xs mt-3 text-center leading-relaxed">
+          O ranking está vazio porque o Redis precisa de permissão de <strong>escrita</strong>.
         </p>
+        <ol class="mt-4 text-phosphor/70 text-[11px] font-mono text-left space-y-2 list-decimal list-inside">
+          <li>Abra <a href="https://console.upstash.com" target="_blank" rel="noopener" class="text-phosphor underline">console.upstash.com</a></li>
+          <li>Seu banco → aba REST</li>
+          <li>Use o token <strong class="text-amber">Default</strong> (não Read-Only)</li>
+          <li>Copie URL e Token na Vercel</li>
+          <li>Redeploy e clique no botão abaixo</li>
+        </ol>
         <button
           on:click={syncAndRefresh}
-          class="mt-3 px-4 py-2 border border-phosphor/50 text-phosphor hover:bg-phosphor/10 text-xs font-mono transition-all"
+          class="mt-5 px-5 py-2.5 border-2 border-phosphor text-phosphor hover:bg-phosphor hover:text-black text-sm font-mono font-bold transition-all"
         >
           Re-sincronizar para aparecer no mapa
         </button>
