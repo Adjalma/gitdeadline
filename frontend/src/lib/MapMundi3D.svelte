@@ -18,6 +18,8 @@
   let users: MapUser[] = [];
   let onlineCount = 0;
   let loading = true;
+  let debugInfo: { redis_ok?: boolean; ranking_count?: number } | null = null;
+  let syncError = '';
   let containerEl: HTMLDivElement;
   let scene: THREE.Scene;
   let camera: THREE.PerspectiveCamera;
@@ -46,13 +48,14 @@
     return String(Math.floor(h));
   }
 
-  async function fetchMap() {
+  async function fetchMap(includeDebug = false) {
     try {
-      const url = `/api/ranking?map=1&limit=200${userId ? `&ping=${encodeURIComponent(userId)}` : ''}`;
+      const url = `/api/ranking?map=1&limit=200${userId ? `&ping=${encodeURIComponent(userId)}` : ''}${includeDebug ? '&debug=1' : ''}`;
       const res = await fetch(url, { credentials: 'include' });
       const data = await res.json().catch(() => ({}));
       users = data.users ?? [];
       onlineCount = data.online_count || 0;
+      if (includeDebug && data.debug) debugInfo = data.debug;
     } catch (_) {
       users = [];
     } finally {
@@ -62,15 +65,21 @@
 
   async function syncAndRefresh() {
     if (!userId) return;
+    syncError = '';
     try {
       const res = await fetch(`/api/user/${userId}/init?sync=1`, { method: 'POST', credentials: 'include' });
+      const data = await res.json().catch(() => ({}));
       if (res.ok) {
         triggerTimeRefresh.update((n) => n + 1);
         triggerMapRefresh.update((n) => n + 1);
+      } else {
+        syncError = data?.error || `Erro ${res.status}`;
       }
-      await fetchMap();
+      await fetchMap(true);
       if (scene) updateScene();
-    } catch (_) {}
+    } catch (e) {
+      syncError = (e as Error)?.message || 'Erro ao sincronizar';
+    }
   }
 
   function createTower(
@@ -299,21 +308,32 @@
       <div class="absolute inset-0 flex flex-col items-center justify-center bg-black/80 z-10 p-6 max-w-md mx-auto">
         <p class="text-amber font-mono font-bold text-center text-base">Mapa vazio</p>
         <p class="text-phosphor/80 text-xs mt-3 text-center leading-relaxed">
-          O ranking está vazio porque o Redis precisa de permissão de <strong>escrita</strong>.
+          Clique em <strong>Re-sincronizar</strong> para gravar seu tempo no ranking. Se já fez isso e nada muda, veja o diagnóstico.
         </p>
-        <ol class="mt-4 text-phosphor/70 text-[11px] font-mono text-left space-y-2 list-decimal list-inside">
-          <li>Abra <a href="https://console.upstash.com" target="_blank" rel="noopener" class="text-phosphor underline">console.upstash.com</a></li>
-          <li>Seu banco → aba REST</li>
-          <li>Use o token <strong class="text-amber">Default</strong> (não Read-Only)</li>
-          <li>Copie URL e Token na Vercel</li>
-          <li>Redeploy e clique no botão abaixo</li>
-        </ol>
-        <button
-          on:click={syncAndRefresh}
-          class="mt-5 px-5 py-2.5 border-2 border-phosphor text-phosphor hover:bg-phosphor hover:text-black text-sm font-mono font-bold transition-all"
-        >
-          Re-sincronizar para aparecer no mapa
-        </button>
+        {#if syncError}
+          <div class="mt-4 p-3 rounded border border-neonred/50 bg-neonred/10 text-neonred text-[11px] font-mono">
+            {syncError}
+          </div>
+        {:else if debugInfo}
+          <div class="mt-4 p-3 rounded border border-phosphor/30 bg-black/40 text-phosphor/80 text-[11px] font-mono">
+            Redis: {debugInfo.redis_ok ? '✓ OK' : '✗ não configurado'}<br>
+            Jogadores no ranking: {debugInfo.ranking_count ?? '?'}
+          </div>
+        {/if}
+        <div class="mt-4 flex gap-2 flex-wrap justify-center">
+          <button
+            on:click={() => fetchMap(true)}
+            class="px-3 py-2 border border-phosphor/50 text-phosphor/80 hover:text-phosphor text-xs font-mono"
+          >
+            Diagnóstico
+          </button>
+          <button
+            on:click={syncAndRefresh}
+            class="px-5 py-2.5 border-2 border-phosphor text-phosphor hover:bg-phosphor hover:text-black text-sm font-mono font-bold transition-all"
+          >
+            Re-sincronizar
+          </button>
+        </div>
       </div>
     {/if}
     <div class="absolute bottom-2 left-2 right-2 flex justify-between items-center text-phosphor/50 text-[10px] font-mono">

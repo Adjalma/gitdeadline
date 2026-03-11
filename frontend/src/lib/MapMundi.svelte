@@ -214,11 +214,9 @@
 
       {#if users.length === 0}
         <div class="mt-4 p-5 rounded-lg border-2 border-amber/50 bg-amber/5">
-          <p class="text-amber font-mono font-bold">Mapa vazio — Token Read-Only no Upstash</p>
+          <p class="text-amber font-mono font-bold">Mapa vazio</p>
           <p class="text-phosphor/70 text-xs mt-2">
-            1. <a href="https://console.upstash.com" target="_blank" rel="noopener" class="text-phosphor underline">Upstash</a> → seu banco → REST
-            <br>2. Token <strong class="text-amber">Default</strong> (não Read-Only) → copie na Vercel
-            <br>3. Redeploy → clique abaixo
+            Clique em <strong>Re-sincronizar</strong> para gravar seu tempo no ranking.
           </p>
           <button
             on:click={syncAndRefresh}
